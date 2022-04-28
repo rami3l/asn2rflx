@@ -84,6 +84,12 @@ version = "1.1.1"
 summary = "iniconfig: brain-dead simple config-ini parsing"
 
 [[package]]
+name = "more-itertools"
+version = "8.12.0"
+requires_python = ">=3.5"
+summary = "More routines for operating on iterables, beyond itertools"
+
+[[package]]
 name = "mypy"
 version = "0.950"
 requires_python = ">=3.6"
@@ -260,7 +266,7 @@ summary = "an efficient SMT solver library"
 
 [metadata]
 lock_version = "3.1"
-content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d83402139949378e5"
+content_hash = "sha256:aa7bc7851f78681a8099b16fb31d3f7669386b3a5ba2f9823fecfb9cda6e5a4e"
 
 [metadata.files]
 "asn1tools 0.161.0" = [
@@ -324,6 +330,10 @@ content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d834021399
 "iniconfig 1.1.1" = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
+]
+"more-itertools 8.12.0" = [
+    {file = "more_itertools-8.12.0-py3-none-any.whl", hash = "sha256:43e6dd9942dffd72661a2c4ef383ad7da1e6a3e968a927ad7a6083ab410a688b"},
+    {file = "more-itertools-8.12.0.tar.gz", hash = "sha256:7dc6ad46f05f545f900dd59e8dfb4e84a4827b97b3cfecb175ea0c7d247f6064"},
 ]
 "mypy 0.950" = [
     {file = "mypy-0.950-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:cf9c261958a769a3bd38c3e133801ebcd284ffb734ea12d01457cb09eacf7d7b"},
