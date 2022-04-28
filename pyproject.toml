@@ -1,0 +1,27 @@
+[project]
+name = "asn2rflx"
+version = ""
+description = ""
+authors = [{ name = "rami3l", email = "rami3l@outlook.com" }]
+dependencies = [
+    "asn1tools>=0.161.0",
+    "RecordFlux @ git+https://github.com/Componolit/RecordFlux",
+    "setuptools>=62.1.0",
+]
+
+requires-python = ">=3.9"
+license = { text = "MIT" }
+[project.optional-dependencies]
+
+[build-system]
+requires = ["pdm-pep517>=0.12.0"]
+build-backend = "pdm.pep517.api"
+
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = ["black>=22.3.0", "pytest>=7.1.1", "pydbg>=0.3.0", "mypy>=0.942"]
+
+[tool.pdm.scripts]
+main = "python -m asn2rflx"
+test = "pytest tests/"
+fmt = "black ."
