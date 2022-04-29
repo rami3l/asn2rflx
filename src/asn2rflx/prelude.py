@@ -3,7 +3,6 @@ from enum import Enum, unique
 from typing import Protocol
 
 import rflx.model as model
-from overrides import overrides
 from rflx.expression import Equal, Mul, Number, Variable
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
@@ -63,29 +62,30 @@ class BerType(Protocol):
 
     def lv_ty(self) -> model.Type:
         """The `UNTAGGED`, length-value (LV) encoding of this type."""
+        f = Field
         links = [
             # TODO: Add support for long length 0x81
-            Link(INITIAL, Field("Length")),
-            Link(
-                Field("Length"), Field("Value"), size=Mul(Variable("Length"), Number(8))
-            ),
-            Link(Field("Value"), FINAL),
+            Link(INITIAL, f("Length")),
+            Link(f("Length"), f("Value"), size=Mul(Variable("Length"), Number(8))),
+            Link(f("Value"), FINAL),
         ]
-        fields = {Field("Length"): ASN_LENGTH_TY, Field("Value"): self.v_ty()}
+        fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
         path = self.path + "::" if self.path else ""
         return model.Message(path + "UNTAGGED_" + self.ident, links, fields)
 
     def tlv_ty(self) -> model.Type:
         """The tag-length-value (TLV) encoding of this type."""
+        # TODO: Handle non-universal tag (TAG_CLASS).
+        f = Field
         tag_match = Equal(Variable("Tag"), Variable(self.tag.name))
         links = [
-            Link(INITIAL, Field("Tag")),
+            Link(INITIAL, f("Tag")),
             # If the current tag is not what we want, then directly jump to FINAL.
-            Link(Field("Tag"), FINAL, condition=-tag_match),
-            Link(Field("Tag"), Field("Untagged"), condition=tag_match),
-            Link(Field("Untagged"), FINAL),
+            Link(f("Tag"), FINAL, condition=-tag_match),
+            Link(f("Tag"), f("Untagged"), condition=tag_match),
+            Link(f("Untagged"), FINAL),
         ]
-        fields = {Field("Tag"): ASN_TAG_TY, Field("Untagged"): self.lv_ty()}
+        fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): self.lv_ty()}
         path = self.path + "::" if self.path else ""
         return model.Message(path + self.ident, links, fields)
 

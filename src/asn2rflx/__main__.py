@@ -6,6 +6,7 @@ def greeting() -> str:
 
 
 def main() -> None:
+    print(INTEGER.lv_ty())
     print(INTEGER.tlv_ty())
 
 
