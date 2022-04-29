@@ -3,7 +3,8 @@ from enum import Enum, unique
 from typing import Protocol
 
 import rflx.model as model
-from rflx.expression import Equal, Mul, Number, Variable
+from overrides import overrides
+from rflx.expression import Equal, Length, Mul, Number, Variable
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
 
@@ -38,6 +39,20 @@ ASN_TAG_TY: model.Type = model.Enumeration(
 
 ASN_LENGTH_TY: model.Type = model.RangeInteger(
     PRELUDE_NAME + "::Asn_Length", first=Number(0x00), last=Number(0x81), size=Number(8)
+)
+
+
+@unique
+class AsnRawBoolean(Enum):
+    B_FALSE = 0x00
+    B_TRUE = 0xFF
+
+
+ASN_RAW_BOOLEAN_TY: model.Type = model.Enumeration(
+    PRELUDE_NAME + "::Asn_Raw_Boolean",
+    literals=[(i.name, Number(i.value)) for i in AsnRawBoolean],
+    size=Number(8),
+    always_valid=False,
 )
 
 
@@ -87,7 +102,7 @@ class BerType(Protocol):
         ]
         fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): self.lv_ty()}
         path = self.path + "::" if self.path else ""
-        return model.Message(path + self.ident, links, fields)
+        return model.UnprovenMessage(path + self.ident, links, fields).merged()
 
 
 @dataclass
@@ -112,8 +127,37 @@ class SimpleBerType(BerType):
 
 
 @dataclass
+class DefiniteBerType(SimpleBerType):
+    """A `SimpleBerType` with a known underlying RecordFlux Type."""
+
+    _v_ty: model.Type
+
+    @overrides
+    def v_ty(self) -> model.Type:
+        return self._v_ty
+
+    @overrides
+    def lv_ty(self) -> model.Type:
+        """The `UNTAGGED`, length-value (LV) encoding of this type."""
+        f = Field
+        len_match = Equal(Length("Length"), Length(self.v_ty().full_name))
+        links = [
+            Link(INITIAL, f("Length")),
+            Link(f("Length"), FINAL, condition=-len_match),
+            Link(f("Length"), f("Value"), condition=len_match),
+            Link(f("Value"), FINAL),
+        ]
+        fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
+        path = self.path + "::" if self.path else ""
+        return model.Message(path + "UNTAGGED_" + self.ident, links, fields)
+
+
+@dataclass
 class StructuredBerType(BerType):
     ...
 
 
+BOOLEAN = DefiniteBerType(
+    PRELUDE_NAME, "BOOLEAN", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
+)
 INTEGER = SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER)
