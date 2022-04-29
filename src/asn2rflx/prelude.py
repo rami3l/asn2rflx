@@ -25,6 +25,7 @@ class AsnTag(Enum):
     UT_SEQUENCE = 0x10
     UT_SET = 0x11
     UT_PrintableString = 0x13
+    UT_T61String = 0x14
     UT_IA5String = 0x16
     UT_UTCTime = 0x17
     UT_GeneralizedTime = 0x18
@@ -161,3 +162,11 @@ BOOLEAN = DefiniteBerType(
     PRELUDE_NAME, "BOOLEAN", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
 )
 INTEGER = SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER)
+
+# TODO: In BER, strings can be simple or structured. Now we only consider the case where it's simple.
+BIT_STRING = SimpleBerType(PRELUDE_NAME, "BIT_STRING", AsnTag.UT_BIT_STRING)
+OCTET_STRING = SimpleBerType(PRELUDE_NAME, "OCTET_STRING", AsnTag.UT_OCTET_STRING)
+PrintableString = SimpleBerType(
+    PRELUDE_NAME, "PrintableString", AsnTag.UT_PrintableString
+)
+IA5String = SimpleBerType(PRELUDE_NAME, "IA5String", AsnTag.UT_IA5String)
