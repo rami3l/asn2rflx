@@ -208,6 +208,7 @@ BER_TYPES = [
     PrintableString := SimpleBerType(
         PRELUDE_NAME, "PrintableString", AsnTag.UT_PrintableString
     ),
+    T61String := SimpleBerType(PRELUDE_NAME, "T61String", AsnTag.UT_T61String),
     IA5String := SimpleBerType(PRELUDE_NAME, "IA5String", AsnTag.UT_IA5String),
 ]
 
