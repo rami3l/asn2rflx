@@ -38,14 +38,6 @@ class AsnRawBoolean(Enum):
     B_TRUE = 0xFF
 
 
-ASN_RAW_BOOLEAN_TY: model.Type = model.Enumeration(
-    PRELUDE_NAME + "::Asn_Raw_Boolean",
-    literals=[(i.name, Number(i.value)) for i in AsnRawBoolean],
-    size=Number(8),
-    always_valid=False,
-)
-
-
 class BerType(Protocol):
     @property
     def path(self) -> str:
@@ -176,8 +168,29 @@ class DefiniteBerType(SimpleBerType):
 
 
 @dataclass
-class StructuredBerType(BerType):
-    ...
+class SequenceOfBerType(BerType):
+    _path: str
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    @property
+    def ident(self) -> str:
+        return "SEQUENCE_OF_" + self.elem_v_ty.ident
+
+    @property
+    def tag(self) -> AsnTag:
+        return AsnTag.UT_SEQUENCE
+
+    elem_v_ty: BerType
+
+    @overrides
+    def v_ty(self) -> model.Type:
+        return model.Sequence(
+            self.path + "::Asn_Raw_" + self.ident,
+            self.elem_v_ty.tlv_ty(),
+        )
 
 
 HELPER_TYPES = [
@@ -192,6 +205,12 @@ HELPER_TYPES = [
         first=Number(0x00),
         last=Number(0x81),
         size=Number(8),
+    ),
+    ASN_RAW_BOOLEAN_TY := model.Enumeration(
+        PRELUDE_NAME + "::Asn_Raw_BOOLEAN",
+        literals=[(i.name, Number(i.value)) for i in AsnRawBoolean],
+        size=Number(8),
+        always_valid=False,
     ),
 ]
 
@@ -212,7 +231,7 @@ BER_TYPES = [
     IA5String := SimpleBerType(PRELUDE_NAME, "IA5String", AsnTag.UT_IA5String),
 ]
 
-
 MODEL = model.Model(
     types=HELPER_TYPES + list(flatten([ty.lv_ty(), ty.tlv_ty()] for ty in BER_TYPES))
 )
+"""Base prelude without any structured types."""

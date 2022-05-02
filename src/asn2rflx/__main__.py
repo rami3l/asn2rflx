@@ -2,8 +2,10 @@ import logging
 from pathlib import Path
 
 import coloredlogs
+from more_itertools import flatten
+from rflx.model.model import Model
 
-from asn2rflx.prelude import MODEL
+from asn2rflx.prelude import MODEL, OCTET_STRING, SequenceOfBerType
 
 
 def greeting() -> str:
@@ -17,7 +19,14 @@ def main() -> None:
     outpath = Path("./build/rflx/specs/")
     logging.info(f"Writing specs to `{outpath.absolute()}`...")
     outpath.mkdir(parents=True, exist_ok=True)
-    MODEL.write_specification_files(outpath)
+    sequence_of_types = [SequenceOfBerType("Test", OCTET_STRING)]
+    model = Model(
+        types=MODEL.types[:]
+        + list(
+            flatten([ty.v_ty(), ty.lv_ty(), ty.tlv_ty()] for ty in sequence_of_types)
+        )
+    )
+    model.write_specification_files(outpath)
     logging.info(f"Writing specs done!")
 
 
