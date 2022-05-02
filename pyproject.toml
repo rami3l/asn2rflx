@@ -8,7 +8,9 @@ dependencies = [
     "RecordFlux @ git+https://github.com/Componolit/RecordFlux",
     "setuptools>=62.1.0",
     "more-itertools>=8.12.0",
-    "overrides>=6.1.0"]
+    "overrides>=6.1.0",
+    "coloredlogs>=15.0.1",
+]
 
 requires-python = ">=3.9"
 license = { text = "MIT" }

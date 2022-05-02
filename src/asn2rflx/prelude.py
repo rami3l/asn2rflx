@@ -3,6 +3,7 @@ from enum import Enum, unique
 from typing import Protocol
 
 import rflx.model as model
+from more_itertools import flatten
 from overrides import overrides
 from rflx.expression import Equal, Length, Mul, Number, Variable
 from rflx.model.message import FINAL, INITIAL, Field, Link
@@ -158,15 +159,19 @@ class StructuredBerType(BerType):
     ...
 
 
-BOOLEAN = DefiniteBerType(
-    PRELUDE_NAME, "BOOLEAN", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
-)
-INTEGER = SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER)
+BER_TYPES = [
+    BOOLEAN := DefiniteBerType(
+        PRELUDE_NAME, "BOOLEAN", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
+    ),
+    INTEGER := SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER),
+    # TODO: In BER, strings can be simple or structured. Now we only consider the case where it's simple.
+    BIT_STRING := SimpleBerType(PRELUDE_NAME, "BIT_STRING", AsnTag.UT_BIT_STRING),
+    OCTET_STRING := SimpleBerType(PRELUDE_NAME, "OCTET_STRING", AsnTag.UT_OCTET_STRING),
+    PrintableString := SimpleBerType(
+        PRELUDE_NAME, "PrintableString", AsnTag.UT_PrintableString
+    ),
+    IA5String := SimpleBerType(PRELUDE_NAME, "IA5String", AsnTag.UT_IA5String),
+]
 
-# TODO: In BER, strings can be simple or structured. Now we only consider the case where it's simple.
-BIT_STRING = SimpleBerType(PRELUDE_NAME, "BIT_STRING", AsnTag.UT_BIT_STRING)
-OCTET_STRING = SimpleBerType(PRELUDE_NAME, "OCTET_STRING", AsnTag.UT_OCTET_STRING)
-PrintableString = SimpleBerType(
-    PRELUDE_NAME, "PrintableString", AsnTag.UT_PrintableString
-)
-IA5String = SimpleBerType(PRELUDE_NAME, "IA5String", AsnTag.UT_IA5String)
+
+MODEL = model.Model(types=list(flatten([ty.lv_ty(), ty.tlv_ty()] for ty in BER_TYPES)))

@@ -1,10 +1,9 @@
-from asn2rflx.prelude import (
-    ASN_LENGTH_TY,
-    ASN_RAW_BOOLEAN_TY,
-    ASN_TAG_TY,
-    BOOLEAN,
-    INTEGER,
-)
+import logging
+from pathlib import Path
+
+import coloredlogs
+
+from asn2rflx.prelude import MODEL
 
 
 def greeting() -> str:
@@ -12,13 +11,14 @@ def greeting() -> str:
 
 
 def main() -> None:
-    print(ASN_TAG_TY)
-    print(ASN_LENGTH_TY)
-    print(ASN_RAW_BOOLEAN_TY)
-    print(INTEGER.lv_ty())
-    print(INTEGER.tlv_ty())
-    print(BOOLEAN.lv_ty())
-    print(BOOLEAN.tlv_ty())
+    logging.basicConfig(level=logging.INFO)
+    coloredlogs.install()
+
+    outpath = Path("./build/rflx/specs/")
+    logging.info(f"Writing specs to `{outpath.absolute()}`...")
+    outpath.mkdir(parents=True, exist_ok=True)
+    MODEL.write_specification_files(outpath)
+    logging.info(f"Writing specs done!")
 
 
 if __name__ == "__main__":
