@@ -32,18 +32,6 @@ class AsnTag(Enum):
     UT_GeneralizedTime = 0x18
 
 
-ASN_TAG_TY: model.Type = model.Enumeration(
-    PRELUDE_NAME + "::Asn_Tag",
-    literals=[(i.name, Number(i.value)) for i in AsnTag],
-    size=Number(8),
-    always_valid=True,
-)
-
-ASN_LENGTH_TY: model.Type = model.RangeInteger(
-    PRELUDE_NAME + "::Asn_Length", first=Number(0x00), last=Number(0x81), size=Number(8)
-)
-
-
 @unique
 class AsnRawBoolean(Enum):
     B_FALSE = 0x00
@@ -129,6 +117,39 @@ class SimpleBerType(BerType):
 
 
 @dataclass
+class NullBerType(BerType):
+
+    _path: str
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    _ident: str
+
+    @property
+    def ident(self) -> str:
+        return self._ident
+
+    @property
+    def tag(self) -> AsnTag:
+        return AsnTag.UT_NULL
+
+    @overrides
+    def lv_ty(self) -> model.Type:
+        """The `UNTAGGED`, length-value (LV) encoding of this type."""
+        f = Field
+        links = [
+            Link(INITIAL, f("Length")),
+            # TODO: Ideally we should check that the length field is equivalent to 0x00.
+            Link(f("Length"), FINAL),
+        ]
+        fields = {f("Length"): ASN_LENGTH_TY}
+        path = self.path + "::" if self.path else ""
+        return model.Message(path + "UNTAGGED_" + self.ident, links, fields)
+
+
+@dataclass
 class DefiniteBerType(SimpleBerType):
     """A `SimpleBerType` with a known underlying RecordFlux Type."""
 
@@ -159,11 +180,28 @@ class StructuredBerType(BerType):
     ...
 
 
+HELPER_TYPES = [
+    ASN_TAG_TY := model.Enumeration(
+        PRELUDE_NAME + "::Asn_Tag",
+        literals=[(i.name, Number(i.value)) for i in AsnTag],
+        size=Number(8),
+        always_valid=True,
+    ),
+    ASN_LENGTH_TY := model.RangeInteger(
+        PRELUDE_NAME + "::Asn_Length",
+        first=Number(0x00),
+        last=Number(0x81),
+        size=Number(8),
+    ),
+]
+
 BER_TYPES = [
     BOOLEAN := DefiniteBerType(
         PRELUDE_NAME, "BOOLEAN", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
     ),
     INTEGER := SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER),
+    # NOTE: To avoid colliding with a keyword, an `_` is needed at the end of `NULL`.
+    NULL := NullBerType(PRELUDE_NAME, "NULL_"),
     # TODO: In BER, strings can be simple or structured. Now we only consider the case where it's simple.
     BIT_STRING := SimpleBerType(PRELUDE_NAME, "BIT_STRING", AsnTag.UT_BIT_STRING),
     OCTET_STRING := SimpleBerType(PRELUDE_NAME, "OCTET_STRING", AsnTag.UT_OCTET_STRING),
@@ -174,4 +212,6 @@ BER_TYPES = [
 ]
 
 
-MODEL = model.Model(types=list(flatten([ty.lv_ty(), ty.tlv_ty()] for ty in BER_TYPES)))
+MODEL = model.Model(
+    types=HELPER_TYPES + list(flatten([ty.lv_ty(), ty.tlv_ty()] for ty in BER_TYPES))
+)
