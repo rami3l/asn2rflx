@@ -221,6 +221,9 @@ BER_TYPES = [
     ),
     NULL := NullBerType(PRELUDE_NAME, "NULL_"),
     INTEGER := SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER),
+    OBJECT_IDENTIFIER := SimpleBerType(
+        PRELUDE_NAME, "OBJECT_IDENTIFIER", AsnTag.UT_INTEGER
+    ),
     # TODO: In BER, strings can be simple or structured. Now we only consider the case where it's simple.
     BIT_STRING := SimpleBerType(PRELUDE_NAME, "BIT_STRING", AsnTag.UT_BIT_STRING),
     OCTET_STRING := SimpleBerType(PRELUDE_NAME, "OCTET_STRING", AsnTag.UT_OCTET_STRING),
