@@ -215,12 +215,12 @@ HELPER_TYPES = [
 ]
 
 BER_TYPES = [
+    # NOTE: To avoid colliding with a keyword, an `_` is needed at the end of `BOOLEAN` and `NULL`.
     BOOLEAN := DefiniteBerType(
-        PRELUDE_NAME, "BOOLEAN", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
+        PRELUDE_NAME, "BOOLEAN_", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
     ),
-    INTEGER := SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER),
-    # NOTE: To avoid colliding with a keyword, an `_` is needed at the end of `NULL`.
     NULL := NullBerType(PRELUDE_NAME, "NULL_"),
+    INTEGER := SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER),
     # TODO: In BER, strings can be simple or structured. Now we only consider the case where it's simple.
     BIT_STRING := SimpleBerType(PRELUDE_NAME, "BIT_STRING", AsnTag.UT_BIT_STRING),
     OCTET_STRING := SimpleBerType(PRELUDE_NAME, "OCTET_STRING", AsnTag.UT_OCTET_STRING),
