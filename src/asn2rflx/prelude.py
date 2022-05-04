@@ -67,8 +67,8 @@ class BerType(Protocol):
             Link(f("Value"), FINAL),
         ]
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
-        path = self.path + "::" if self.path else ""
-        return model.Message(path + "UNTAGGED_" + self.ident, links, fields)
+        full_ident = list(filter(None, [self.path, "UNTAGGED_" + self.ident]))
+        return model.Message(full_ident, links, fields)
 
     def tlv_ty(self) -> model.Type:
         """The tag-length-value (TLV) encoding of this type."""
@@ -83,8 +83,8 @@ class BerType(Protocol):
             Link(f("Untagged"), FINAL),
         ]
         fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): self.lv_ty()}
-        path = self.path + "::" if self.path else ""
-        return model.UnprovenMessage(path + self.ident, links, fields).merged()
+        full_ident = list(filter(None, [self.path, self.ident]))
+        return model.UnprovenMessage(full_ident, links, fields).merged()
 
 
 @dataclass
@@ -137,8 +137,8 @@ class NullBerType(BerType):
             Link(f("Length"), FINAL),
         ]
         fields = {f("Length"): ASN_LENGTH_TY}
-        path = self.path + "::" if self.path else ""
-        return model.Message(path + "UNTAGGED_" + self.ident, links, fields)
+        full_ident = list(filter(None, [self.path, "UNTAGGED_" + self.ident]))
+        return model.Message(full_ident, links, fields)
 
 
 @dataclass
@@ -163,8 +163,8 @@ class DefiniteBerType(SimpleBerType):
             Link(f("Value"), FINAL),
         ]
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
-        path = self.path + "::" if self.path else ""
-        return model.Message(path + "UNTAGGED_" + self.ident, links, fields)
+        full_ident = list(filter(None, [self.path, "UNTAGGED_" + self.ident]))
+        return model.Message(full_ident, links, fields)
 
 
 @dataclass
@@ -188,26 +188,26 @@ class SequenceOfBerType(BerType):
     @overrides
     def v_ty(self) -> model.Type:
         return model.Sequence(
-            self.path + "::Asn_Raw_" + self.ident,
+            list(filter(None, [self.path, "Asn_Raw_" + self.ident])),
             self.elem_v_ty.tlv_ty(),
         )
 
 
 HELPER_TYPES = [
     ASN_TAG_TY := model.Enumeration(
-        PRELUDE_NAME + "::Asn_Tag",
+        [PRELUDE_NAME, "Asn_Tag"],
         literals=[(i.name, Number(i.value)) for i in AsnTag],
         size=Number(8),
         always_valid=True,
     ),
     ASN_LENGTH_TY := model.RangeInteger(
-        PRELUDE_NAME + "::Asn_Length",
+        [PRELUDE_NAME, "Asn_Length"],
         first=Number(0x00),
         last=Number(0x81),
         size=Number(8),
     ),
     ASN_RAW_BOOLEAN_TY := model.Enumeration(
-        PRELUDE_NAME + "::Asn_Raw_BOOLEAN",
+        [PRELUDE_NAME, "Asn_Raw_BOOLEAN"],
         literals=[(i.name, Number(i.value)) for i in AsnRawBoolean],
         size=Number(8),
         always_valid=False,
