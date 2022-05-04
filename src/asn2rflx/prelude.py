@@ -109,39 +109,6 @@ class SimpleBerType(BerType):
 
 
 @dataclass
-class NullBerType(BerType):
-
-    _path: str
-
-    @property
-    def path(self) -> str:
-        return self._path
-
-    _ident: str
-
-    @property
-    def ident(self) -> str:
-        return self._ident
-
-    @property
-    def tag(self) -> AsnTag:
-        return AsnTag.UT_NULL
-
-    @overrides
-    def lv_ty(self) -> model.Type:
-        """The `UNTAGGED`, length-value (LV) encoding of this type."""
-        f = Field
-        links = [
-            Link(INITIAL, f("Length")),
-            # TODO: Ideally we should check that the length field is equivalent to 0x00.
-            Link(f("Length"), FINAL),
-        ]
-        fields = {f("Length"): ASN_LENGTH_TY}
-        full_ident = list(filter(None, [self.path, "UNTAGGED_" + self.ident]))
-        return model.Message(full_ident, links, fields)
-
-
-@dataclass
 class DefiniteBerType(SimpleBerType):
     """A `SimpleBerType` with a known underlying RecordFlux Type."""
 
@@ -155,14 +122,23 @@ class DefiniteBerType(SimpleBerType):
     def lv_ty(self) -> model.Type:
         """The `UNTAGGED`, length-value (LV) encoding of this type."""
         f = Field
-        len_match = Equal(Length("Length"), Length(self.v_ty().full_name))
-        links = [
-            Link(INITIAL, f("Length")),
-            Link(f("Length"), FINAL, condition=-len_match),
-            Link(f("Length"), f("Value"), condition=len_match),
-            Link(f("Value"), FINAL),
-        ]
-        fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
+        v_ty = self.v_ty()
+        links = [Link(INITIAL, f("Length"))]
+        fields = {f("Length"): ASN_LENGTH_TY}
+        is_null_v_ty = isinstance(v_ty, model.AbstractMessage) and (
+            not v_ty.structure or not v_ty.types
+        )
+        if is_null_v_ty:
+            # Special case for NULL, since its v_ty is `null message`.
+            links.append(Link(f("Length"), FINAL))
+        else:
+            len_match = Equal(Length("Length"), Length(v_ty.full_name))
+            links += [
+                Link(f("Length"), FINAL, condition=-len_match),
+                Link(f("Length"), f("Value"), condition=len_match),
+                Link(f("Value"), FINAL),
+            ]
+            fields[f("Value")] = v_ty
         full_ident = list(filter(None, [self.path, "UNTAGGED_" + self.ident]))
         return model.Message(full_ident, links, fields)
 
@@ -212,6 +188,13 @@ HELPER_TYPES = [
         size=Number(8),
         always_valid=False,
     ),
+    ASN_RAW_NULL_TY := model.Message(
+        [PRELUDE_NAME, "Asn_Raw_NULL"],
+        structure=[],
+        types={},
+        # Hack. See https://github.com/Componolit/RecordFlux/blob/79de5e735fa0ce9889f2dd60efc156ec5b743d11/tests/data/models.py#L40
+        skip_proof=True,
+    ),
 ]
 
 BER_TYPES = [
@@ -219,7 +202,7 @@ BER_TYPES = [
     BOOLEAN := DefiniteBerType(
         PRELUDE_NAME, "BOOLEAN_", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
     ),
-    NULL := NullBerType(PRELUDE_NAME, "NULL_"),
+    NULL := DefiniteBerType(PRELUDE_NAME, "NULL_", AsnTag.UT_NULL, ASN_RAW_NULL_TY),
     INTEGER := SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER),
     OBJECT_IDENTIFIER := SimpleBerType(
         PRELUDE_NAME, "OBJECT_IDENTIFIER", AsnTag.UT_INTEGER
