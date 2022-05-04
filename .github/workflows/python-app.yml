@@ -19,6 +19,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Cache GNAT Community
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/work/gnat
+          key: ${{ runner.os }}-gnat-ce2021
+
+      - name: Install GNAT Community
+        uses: ada-actions/toolchain@ce2021
+        with:
+          distrib: community
+          install_dir: /home/runner/work/gnat
+
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
