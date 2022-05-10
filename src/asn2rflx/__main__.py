@@ -21,13 +21,13 @@ def main() -> None:
     outpath.mkdir(parents=True, exist_ok=True)
     sequence_of_types = [SequenceOfBerType("Test", OCTET_STRING)]
     model = Model(
-        types=MODEL.types[:]
-        + list(
-            flatten([ty.v_ty(), ty.lv_ty(), ty.tlv_ty()] for ty in sequence_of_types)
-        )
+        types=[
+            *MODEL.types[:],
+            *flatten([ty.v_ty(), ty.lv_ty(), ty.tlv_ty()] for ty in sequence_of_types),
+        ]
     )
     model.write_specification_files(outpath)
-    logging.info(f"Writing specs done!")
+    logging.info("Writing specs done!")
 
 
 if __name__ == "__main__":

@@ -12,10 +12,14 @@ from rflx.model.type_ import OPAQUE
 
 PRELUDE_NAME: str = "Prelude"
 
+CONSTRUCTED_FLAG = 0b1_00000
+"""Indicator bit for constructed form encoding (i.e. vs primitive form)"""
+
 
 @unique
 class AsnTag(Enum):
-    # HACK: We support only low tags for now. Actually there are low tags and high tags, and the latter is another LV coding in itself :(
+    # HACK: We support only low tags for now. Actually there are low tags and high tags,
+    # and the latter is another indefinite-length coding in itself :(
     UT_BOOLEAN = 0x01
     UT_INTEGER = 0x02
     UT_BIT_STRING = 0x03
@@ -24,8 +28,8 @@ class AsnTag(Enum):
     UT_OBJECT_IDENTIFIER = 0x06
     UT_Enumeration = 0x0A
     UT_UTF8String = 0x0C
-    UT_SEQUENCE = 0x10
-    UT_SET = 0x11
+    UT_SEQUENCE = 0x10 | CONSTRUCTED_FLAG
+    UT_SET = 0x11 | CONSTRUCTED_FLAG
     UT_PrintableString = 0x13
     UT_T61String = 0x14
     UT_IA5String = 0x16
@@ -54,6 +58,10 @@ class BerType(Protocol):
     def tag(self) -> AsnTag:
         raise NotImplementedError
 
+    @property
+    def tag_ident(self) -> ID:
+        return ID(["Prelude", self.tag.name])
+
     def v_ty(self) -> model.Type:
         """The `RAW` RecordFlux representation of this type."""
         return OPAQUE
@@ -75,7 +83,7 @@ class BerType(Protocol):
         """The tag-length-value (TLV) encoding of this type."""
         # TODO: Handle non-universal tag (TAG_CLASS).
         f = Field
-        tag_match = Equal(Variable("Tag"), Variable(self.tag.name))
+        tag_match = Equal(Variable("Tag"), Variable(self.tag_ident))
         links = [
             Link(INITIAL, f("Tag")),
             # If the current tag is not what we want, then directly jump to FINAL.
@@ -193,13 +201,14 @@ HELPER_TYPES = [
         ID([PRELUDE_NAME, "Asn_Raw_NULL"]),
         structure=[],
         types={},
-        # Hack. See https://github.com/Componolit/RecordFlux/blob/79de5e735fa0ce9889f2dd60efc156ec5b743d11/tests/data/models.py#L40
+        # HACK: See https://github.com/Componolit/RecordFlux/blob/79de5e735fa0ce9889f2dd60efc156ec5b743d11/tests/data/models.py#L40
         skip_proof=True,
     ),
 ]
 
 BER_TYPES = [
-    # NOTE: To avoid colliding with a keyword, an `_` is needed at the end of `BOOLEAN` and `NULL`.
+    # NOTE: To avoid colliding with a keyword,
+    # an `_` is needed at the end of `BOOLEAN` and `NULL`.
     BOOLEAN := DefiniteBerType(
         PRELUDE_NAME, "BOOLEAN_", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
     ),
@@ -208,7 +217,8 @@ BER_TYPES = [
     OBJECT_IDENTIFIER := SimpleBerType(
         PRELUDE_NAME, "OBJECT_IDENTIFIER", AsnTag.UT_INTEGER
     ),
-    # TODO: In BER, strings can be simple or structured. Now we only consider the case where it's simple.
+    # TODO: In BER, strings can be primitive or structured.
+    # Now we only consider the case where it's simple.
     BIT_STRING := SimpleBerType(PRELUDE_NAME, "BIT_STRING", AsnTag.UT_BIT_STRING),
     OCTET_STRING := SimpleBerType(PRELUDE_NAME, "OCTET_STRING", AsnTag.UT_OCTET_STRING),
     PrintableString := SimpleBerType(
