@@ -6,6 +6,7 @@ import rflx.model as model
 from more_itertools import flatten
 from overrides import overrides
 from rflx.expression import Equal, Length, Mul, Number, Variable
+from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
 
@@ -67,7 +68,7 @@ class BerType(Protocol):
             Link(f("Value"), FINAL),
         ]
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
-        full_ident = list(filter(None, [self.path, "UNTAGGED_" + self.ident]))
+        full_ident = ID(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
         return model.Message(full_ident, links, fields)
 
     def tlv_ty(self) -> model.Type:
@@ -83,7 +84,7 @@ class BerType(Protocol):
             Link(f("Untagged"), FINAL),
         ]
         fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): self.lv_ty()}
-        full_ident = list(filter(None, [self.path, self.ident]))
+        full_ident = ID(list(filter(None, [self.path, self.ident])))
         return model.UnprovenMessage(full_ident, links, fields).merged()
 
 
@@ -139,7 +140,7 @@ class DefiniteBerType(SimpleBerType):
                 Link(f("Value"), FINAL),
             ]
             fields[f("Value")] = v_ty
-        full_ident = list(filter(None, [self.path, "UNTAGGED_" + self.ident]))
+        full_ident = ID(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
         return model.Message(full_ident, links, fields)
 
 
@@ -164,32 +165,32 @@ class SequenceOfBerType(BerType):
     @overrides
     def v_ty(self) -> model.Type:
         return model.Sequence(
-            list(filter(None, [self.path, "Asn_Raw_" + self.ident])),
+            ID(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
             self.elem_v_ty.tlv_ty(),
         )
 
 
 HELPER_TYPES = [
     ASN_TAG_TY := model.Enumeration(
-        [PRELUDE_NAME, "Asn_Tag"],
+        ID([PRELUDE_NAME, "Asn_Tag"]),
         literals=[(i.name, Number(i.value)) for i in AsnTag],
         size=Number(8),
         always_valid=True,
     ),
     ASN_LENGTH_TY := model.RangeInteger(
-        [PRELUDE_NAME, "Asn_Length"],
+        ID([PRELUDE_NAME, "Asn_Length"]),
         first=Number(0x00),
         last=Number(0x81),
         size=Number(8),
     ),
     ASN_RAW_BOOLEAN_TY := model.Enumeration(
-        [PRELUDE_NAME, "Asn_Raw_BOOLEAN"],
+        ID([PRELUDE_NAME, "Asn_Raw_BOOLEAN"]),
         literals=[(i.name, Number(i.value)) for i in AsnRawBoolean],
         size=Number(8),
         always_valid=False,
     ),
     ASN_RAW_NULL_TY := model.Message(
-        [PRELUDE_NAME, "Asn_Raw_NULL"],
+        ID([PRELUDE_NAME, "Asn_Raw_NULL"]),
         structure=[],
         types={},
         # Hack. See https://github.com/Componolit/RecordFlux/blob/79de5e735fa0ce9889f2dd60efc156ec5b743d11/tests/data/models.py#L40
