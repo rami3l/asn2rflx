@@ -1,40 +1,59 @@
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Protocol
+from functools import reduce
+from typing import Protocol, cast
 
 import rflx.model as model
-from more_itertools import flatten
+from asn1tools.codecs.ber import Class as AsnTagClass
+from asn1tools.codecs.ber import Encoding as AsnTagForm
+from asn1tools.codecs.ber import Tag as AsnTagNum
+from more_itertools import flatten, windowed
 from overrides import overrides
-from rflx.expression import Equal, Length, Mul, Number, Variable
+from rflx.expression import And, Equal, Expr, Length, Mul, Not, Number, Variable
 from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
 
+from asn2rflx.utils import pub_vars
+
 PRELUDE_NAME: str = "Prelude"
 
-CONSTRUCTED_FLAG = 0b1_00000
-"""Indicator bit for constructed form encoding (i.e. vs primitive form)"""
 
+@dataclass
+class AsnTag:
+    class_: int = AsnTagClass.UNIVERSAL
+    form: int = AsnTagForm.PRIMITIVE
+    num: int = AsnTagNum.END_OF_CONTENTS
 
-@unique
-class AsnTag(Enum):
-    # HACK: We support only low tags for now. Actually there are low tags and high tags,
-    # and the latter is another indefinite-length coding in itself :(
-    UT_BOOLEAN = 0x01
-    UT_INTEGER = 0x02
-    UT_BIT_STRING = 0x03
-    UT_OCTET_STRING = 0x04
-    UT_NULL = 0x05
-    UT_OBJECT_IDENTIFIER = 0x06
-    UT_Enumeration = 0x0A
-    UT_UTF8String = 0x0C
-    UT_SEQUENCE = 0x10 | CONSTRUCTED_FLAG
-    UT_SET = 0x11 | CONSTRUCTED_FLAG
-    UT_PrintableString = 0x13
-    UT_T61String = 0x14
-    UT_IA5String = 0x16
-    UT_UTCTime = 0x17
-    UT_GeneralizedTime = 0x18
+    @classmethod
+    def ty(cls) -> model.Type:
+        """The ASN Tag message type in RecordFlux."""
+        f = Field
+        fields = {
+            f("Class"): ASN_TAG_CLASS_TY,
+            f("Form"): ASN_TAG_FORM_TY,
+            f("Num"): ASN_TAG_NUM_TY,
+        }
+        links = [
+            Link(*pair)
+            for pair in windowed(
+                [
+                    INITIAL,
+                    *fields.keys(),
+                    FINAL,
+                ],
+                2,
+            )
+        ]
+        return model.Message(ID([PRELUDE_NAME, "Asn_Tag"]), links, fields)
+
+    def matches(self, ident: str) -> Expr:
+        kvs = {"Class": self.class_, "Form": self.form, "Num": self.num}
+        eqs = (
+            cast(Expr, Equal(Variable(f"{ident}_{k}"), Number(v)))
+            for k, v in kvs.items()
+        )
+        return reduce(And, eqs)
 
 
 @unique
@@ -58,10 +77,6 @@ class BerType(Protocol):
     def tag(self) -> AsnTag:
         raise NotImplementedError
 
-    @property
-    def tag_ident(self) -> ID:
-        return ID(["Prelude", self.tag.name])
-
     def v_ty(self) -> model.Type:
         """The `RAW` RecordFlux representation of this type."""
         return OPAQUE
@@ -77,17 +92,17 @@ class BerType(Protocol):
         ]
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
         full_ident = ID(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
-        return model.Message(full_ident, links, fields)
+        return model.UnprovenMessage(full_ident, links, fields).merged()
 
     def tlv_ty(self) -> model.Type:
         """The tag-length-value (TLV) encoding of this type."""
         # TODO: Handle non-universal tag (TAG_CLASS).
         f = Field
-        tag_match = Equal(Variable("Tag"), Variable(self.tag_ident))
+        tag_match = self.tag.matches("Tag")
         links = [
             Link(INITIAL, f("Tag")),
             # If the current tag is not what we want, then directly jump to FINAL.
-            Link(f("Tag"), FINAL, condition=-tag_match),
+            Link(f("Tag"), FINAL, condition=Not(tag_match)),
             Link(f("Tag"), f("Untagged"), condition=tag_match),
             Link(f("Untagged"), FINAL),
         ]
@@ -166,7 +181,7 @@ class SequenceOfBerType(BerType):
 
     @property
     def tag(self) -> AsnTag:
-        return AsnTag.UT_SEQUENCE
+        return AsnTag(form=AsnTagForm.CONSTRUCTED, num=AsnTagNum.SEQUENCE)
 
     elem_v_ty: BerType
 
@@ -179,16 +194,29 @@ class SequenceOfBerType(BerType):
 
 
 HELPER_TYPES = [
-    ASN_TAG_TY := model.Enumeration(
-        ID([PRELUDE_NAME, "Asn_Tag"]),
-        literals=[(i.name, Number(i.value)) for i in AsnTag],
-        size=Number(8),
-        always_valid=True,
+    ASN_TAG_CLASS_TY := model.RangeInteger(
+        ID([PRELUDE_NAME, "Asn_Tag_Class"]),
+        first=Number(0b00),
+        last=Number(0b11),
+        size=Number(2),
     ),
+    ASN_TAG_FORM_TY := model.RangeInteger(
+        ID([PRELUDE_NAME, "Asn_Tag_Form"]),
+        first=Number(0b0),
+        last=Number(0b1),
+        size=Number(1),
+    ),
+    ASN_TAG_NUM_TY := model.RangeInteger(
+        ID([PRELUDE_NAME, "Asn_Tag_Num"]),
+        first=Number(0b00000),
+        last=Number(0b11111),
+        size=Number(5),
+    ),
+    ASN_TAG_TY := AsnTag.ty(),
     ASN_LENGTH_TY := model.RangeInteger(
         ID([PRELUDE_NAME, "Asn_Length"]),
         first=Number(0x00),
-        last=Number(0x81),
+        last=Number(0x7F),
         size=Number(8),
     ),
     ASN_RAW_BOOLEAN_TY := model.Enumeration(
@@ -210,22 +238,32 @@ BER_TYPES = [
     # NOTE: To avoid colliding with a keyword,
     # an `_` is needed at the end of `BOOLEAN` and `NULL`.
     BOOLEAN := DefiniteBerType(
-        PRELUDE_NAME, "BOOLEAN_", AsnTag.UT_BOOLEAN, ASN_RAW_BOOLEAN_TY
+        PRELUDE_NAME, "BOOLEAN_", AsnTag(num=AsnTagNum.BOOLEAN), ASN_RAW_BOOLEAN_TY
     ),
-    NULL := DefiniteBerType(PRELUDE_NAME, "NULL_", AsnTag.UT_NULL, ASN_RAW_NULL_TY),
-    INTEGER := SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag.UT_INTEGER),
+    NULL := DefiniteBerType(
+        PRELUDE_NAME, "NULL_", AsnTag(num=AsnTagNum.NULL), ASN_RAW_NULL_TY
+    ),
+    INTEGER := SimpleBerType(PRELUDE_NAME, "INTEGER", AsnTag(num=AsnTagNum.INTEGER)),
     OBJECT_IDENTIFIER := SimpleBerType(
-        PRELUDE_NAME, "OBJECT_IDENTIFIER", AsnTag.UT_INTEGER
+        PRELUDE_NAME, "OBJECT_IDENTIFIER", AsnTag(num=AsnTagNum.OBJECT_IDENTIFIER)
     ),
     # TODO: In BER, strings can be primitive or structured.
     # Now we only consider the case where it's simple.
-    BIT_STRING := SimpleBerType(PRELUDE_NAME, "BIT_STRING", AsnTag.UT_BIT_STRING),
-    OCTET_STRING := SimpleBerType(PRELUDE_NAME, "OCTET_STRING", AsnTag.UT_OCTET_STRING),
-    PrintableString := SimpleBerType(
-        PRELUDE_NAME, "PrintableString", AsnTag.UT_PrintableString
+    BIT_STRING := SimpleBerType(
+        PRELUDE_NAME, "BIT_STRING", AsnTag(num=AsnTagNum.BIT_STRING)
     ),
-    T61String := SimpleBerType(PRELUDE_NAME, "T61String", AsnTag.UT_T61String),
-    IA5String := SimpleBerType(PRELUDE_NAME, "IA5String", AsnTag.UT_IA5String),
+    OCTET_STRING := SimpleBerType(
+        PRELUDE_NAME, "OCTET_STRING", AsnTag(num=AsnTagNum.OCTET_STRING)
+    ),
+    PrintableString := SimpleBerType(
+        PRELUDE_NAME, "PrintableString", AsnTag(num=AsnTagNum.PRINTABLE_STRING)
+    ),
+    T61String := SimpleBerType(
+        PRELUDE_NAME, "T61String", AsnTag(num=AsnTagNum.T61_STRING)
+    ),
+    IA5String := SimpleBerType(
+        PRELUDE_NAME, "IA5String", AsnTag(num=AsnTagNum.IA5_STRING)
+    ),
 ]
 
 MODEL = model.Model(
