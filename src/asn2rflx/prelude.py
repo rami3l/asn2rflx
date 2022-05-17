@@ -3,11 +3,11 @@ from enum import Enum, unique
 from functools import lru_cache, reduce
 from typing import Protocol, cast
 
-import rflx.model as model
 from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
 from more_itertools import flatten, windowed
 from overrides import overrides
+from rflx import model
 from rflx.expression import And, Equal, Expr, Length, Mul, Not, Number, Variable
 from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
