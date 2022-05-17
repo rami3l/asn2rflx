@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, unique
-from functools import reduce
-from itertools import starmap
+from functools import lru_cache, reduce
 from typing import Protocol, cast
 
 import rflx.model as model
@@ -22,13 +21,14 @@ class AsnTagForm:
     CONSTRUCTED = 1
 
 
-@dataclass
+@dataclass(frozen=True)
 class AsnTag:
     class_: int = AsnTagClass.UNIVERSAL
     form: int = AsnTagForm.PRIMITIVE
     num: int = AsnTagNum.END_OF_CONTENTS
 
     @classmethod
+    @lru_cache(16)
     def ty(cls) -> model.Type:
         """The ASN Tag message type in RecordFlux."""
         f = Field
@@ -40,6 +40,7 @@ class AsnTag:
         links = [Link(*pair) for pair in windowed([INITIAL, *fields.keys(), FINAL], 2)]
         return model.Message(ID([PRELUDE_NAME, "Asn_Tag"]), links, fields)
 
+    @lru_cache(16)
     def matches(self, ident: str) -> Expr:
         kvs = {"Class": self.class_, "Form": self.form, "Num": self.num}
         eqs = (
@@ -70,10 +71,12 @@ class BerType(Protocol):
     def tag(self) -> AsnTag:
         raise NotImplementedError
 
+    @lru_cache(16)
     def v_ty(self) -> model.Type:
         """The `RAW` RecordFlux representation of this type."""
         return OPAQUE
 
+    @lru_cache(16)
     def lv_ty(self) -> model.Type:
         """The `UNTAGGED`, length-value (LV) encoding of this type."""
         f = Field
@@ -87,6 +90,7 @@ class BerType(Protocol):
         full_ident = ID(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
         return model.UnprovenMessage(full_ident, links, fields).merged()
 
+    @lru_cache(16)
     def tlv_ty(self) -> model.Type:
         """The tag-length-value (TLV) encoding of this type."""
         # TODO: Handle non-universal tag (TAG_CLASS).
@@ -104,7 +108,7 @@ class BerType(Protocol):
         return model.UnprovenMessage(full_ident, links, fields).merged()
 
 
-@dataclass
+@dataclass(frozen=True)
 class SimpleBerType(BerType):
     _path: str
 
@@ -125,23 +129,25 @@ class SimpleBerType(BerType):
         return self._tag
 
 
-@dataclass
+@dataclass(frozen=True)
 class DefiniteBerType(SimpleBerType):
     """A `SimpleBerType` with a known underlying RecordFlux Type."""
 
     _v_ty: model.Type
 
+    @lru_cache(16)
     @overrides
     def v_ty(self) -> model.Type:
         return self._v_ty
 
+    @lru_cache(16)
     @overrides
     def lv_ty(self) -> model.Type:
         """The `UNTAGGED`, length-value (LV) encoding of this type."""
         f = Field
         v_ty = self.v_ty()
         links = [Link(INITIAL, f("Length"))]
-        fields = {f("Length"): ASN_LENGTH_TY}
+        fields = {f("Length"): cast(model.Type, ASN_LENGTH_TY)}
         is_null_v_ty = isinstance(v_ty, model.AbstractMessage) and (
             not v_ty.structure or not v_ty.types
         )
@@ -160,7 +166,7 @@ class DefiniteBerType(SimpleBerType):
         return model.Message(full_ident, links, fields)
 
 
-@dataclass
+@dataclass(frozen=True)
 class SequenceOfBerType(BerType):
     _path: str
 
@@ -178,6 +184,7 @@ class SequenceOfBerType(BerType):
 
     elem_v_ty: BerType
 
+    @lru_cache(16)
     @overrides
     def v_ty(self) -> model.Type:
         return model.Sequence(
