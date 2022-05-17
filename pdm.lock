@@ -1,6 +1,6 @@
 [[package]]
 name = "asn1tools"
-version = "0.161.0"
+version = "0.163.0"
 summary = "ASN.1 parsing, encoding and decoding."
 dependencies = [
     "bitstruct",
@@ -50,7 +50,7 @@ dependencies = [
 
 [[package]]
 name = "click"
-version = "8.1.2"
+version = "8.1.3"
 requires_python = ">=3.7"
 summary = "Composable command line interface toolkit"
 dependencies = [
@@ -64,10 +64,28 @@ requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 summary = "Cross-platform colored terminal text."
 
 [[package]]
+name = "coloredlogs"
+version = "15.0.1"
+requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+summary = "Colored terminal output for Python's logging module"
+dependencies = [
+    "humanfriendly>=9.1",
+]
+
+[[package]]
 name = "diskcache"
 version = "5.4.0"
 requires_python = ">=3"
 summary = "Disk Cache -- Disk and file backed persistent cache."
+
+[[package]]
+name = "humanfriendly"
+version = "10.0"
+requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+summary = "Human friendly output for text interfaces using Python"
+dependencies = [
+    "pyreadline3; sys_platform == \"win32\" and python_version >= \"3.8\"",
+]
 
 [[package]]
 name = "icontract"
@@ -84,6 +102,12 @@ version = "1.1.1"
 summary = "iniconfig: brain-dead simple config-ini parsing"
 
 [[package]]
+name = "more-itertools"
+version = "8.13.0"
+requires_python = ">=3.5"
+summary = "More routines for operating on iterables, beyond itertools"
+
+[[package]]
 name = "mypy"
 version = "0.950"
 requires_python = ">=3.6"
@@ -98,6 +122,15 @@ dependencies = [
 name = "mypy-extensions"
 version = "0.4.3"
 summary = "Experimental type system extensions for programs checked with the mypy typechecker."
+
+[[package]]
+name = "overrides"
+version = "6.1.0"
+requires_python = ">=3.6"
+summary = "A decorator to automatically detect mismatch when overriding a method."
+dependencies = [
+    "typing-utils>=0.0.3",
+]
 
 [[package]]
 name = "packaging"
@@ -166,9 +199,14 @@ dependencies = [
 
 [[package]]
 name = "pyparsing"
-version = "3.0.8"
+version = "3.0.9"
 requires_python = ">=3.6.8"
 summary = "pyparsing module - Classes and methods to define and execute parsing grammars"
+
+[[package]]
+name = "pyreadline3"
+version = "3.4.1"
+summary = "A python implementation of GNU readline."
 
 [[package]]
 name = "pytest"
@@ -191,7 +229,7 @@ name = "recordflux"
 version = "0.6.0rc0"
 requires_python = ">=3.7"
 git = "https://github.com/Componolit/RecordFlux"
-revision = "79de5e735fa0ce9889f2dd60efc156ec5b743d11"
+revision = "f65b5b059ff416b24f9b51bc1c752bc1b8809a85"
 summary = "A toolset for the formal specification of messages and the generation of verifiable binary parsers and message generators."
 dependencies = [
     "RecordFlux-parser==0.10.0",
@@ -226,7 +264,7 @@ summary = "C version of reader, parser and emitter for ruamel.yaml derived from 
 
 [[package]]
 name = "setuptools"
-version = "62.1.0"
+version = "62.3.0"
 requires_python = ">=3.7"
 summary = "Easily download, build, install, upgrade, and uninstall Python packages"
 
@@ -249,22 +287,28 @@ requires_python = ">=3.7"
 summary = "Backported and Experimental Type Hints for Python 3.7+"
 
 [[package]]
+name = "typing-utils"
+version = "0.1.0"
+requires_python = ">=3.6.1"
+summary = "utils to inspect Python type annotations"
+
+[[package]]
 name = "wcwidth"
 version = "0.2.5"
 summary = "Measures the displayed width of unicode strings in a terminal"
 
 [[package]]
 name = "z3-solver"
-version = "4.8.16.0"
+version = "4.8.17.0"
 summary = "an efficient SMT solver library"
 
 [metadata]
 lock_version = "3.1"
-content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d83402139949378e5"
+content_hash = "sha256:4d8ac85c1332413b717eebb401f922e1afce0b7bcb0c5d973f704db28489187a"
 
 [metadata.files]
-"asn1tools 0.161.0" = [
-    {file = "asn1tools-0.161.0.tar.gz", hash = "sha256:714814275855daae3448e28ab24fc191c950fe7a8050f8c64e2f9507d0c0a6a0"},
+"asn1tools 0.163.0" = [
+    {file = "asn1tools-0.163.0.tar.gz", hash = "sha256:336c0c1bea969d3e407c8bb52190234f252fd2f887f819b081482a08b1f6189c"},
 ]
 "asttokens 2.0.5" = [
     {file = "asttokens-2.0.5-py2.py3-none-any.whl", hash = "sha256:0844691e88552595a6f4a4281a9f7f79b8dd45ca4ccea82e5e05b4bbdb76705c"},
@@ -306,17 +350,25 @@ content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d834021399
     {file = "black-22.3.0-py3-none-any.whl", hash = "sha256:bc58025940a896d7e5356952228b68f793cf5fcb342be703c3a2669a1488cb72"},
     {file = "black-22.3.0.tar.gz", hash = "sha256:35020b8886c022ced9282b51b5a875b6d1ab0c387b31a065b84db7c33085ca79"},
 ]
-"click 8.1.2" = [
-    {file = "click-8.1.2-py3-none-any.whl", hash = "sha256:24e1a4a9ec5bf6299411369b208c1df2188d9eb8d916302fe6bf03faed227f1e"},
-    {file = "click-8.1.2.tar.gz", hash = "sha256:479707fe14d9ec9a0757618b7a100a0ae4c4e236fac5b7f80ca68028141a1a72"},
+"click 8.1.3" = [
+    {file = "click-8.1.3-py3-none-any.whl", hash = "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"},
+    {file = "click-8.1.3.tar.gz", hash = "sha256:7682dc8afb30297001674575ea00d1814d808d6a36af415a82bd481d37ba7b8e"},
 ]
 "colorama 0.4.4" = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
+"coloredlogs 15.0.1" = [
+    {file = "coloredlogs-15.0.1-py2.py3-none-any.whl", hash = "sha256:612ee75c546f53e92e70049c9dbfcc18c935a2b9a53b66085ce9ef6a6e5c0934"},
+    {file = "coloredlogs-15.0.1.tar.gz", hash = "sha256:7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0"},
+]
 "diskcache 5.4.0" = [
     {file = "diskcache-5.4.0-py3-none-any.whl", hash = "sha256:af3ec6d7f167bbef7b6c33d9ee22f86d3e8f2dd7131eb7c4703d8d91ccdc0cc4"},
     {file = "diskcache-5.4.0.tar.gz", hash = "sha256:8879eb8c9b4a2509a5e633d2008634fb2b0b35c2b36192d89655dbde02419644"},
+]
+"humanfriendly 10.0" = [
+    {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
+    {file = "humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc"},
 ]
 "icontract 2.6.1" = [
     {file = "icontract-2.6.1.tar.gz", hash = "sha256:dacfc55009993058cd17576faa291ab76b6f39d80ec9d1e524778cd79da11857"},
@@ -324,6 +376,10 @@ content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d834021399
 "iniconfig 1.1.1" = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
     {file = "iniconfig-1.1.1.tar.gz", hash = "sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32"},
+]
+"more-itertools 8.13.0" = [
+    {file = "more_itertools-8.13.0-py3-none-any.whl", hash = "sha256:c5122bffc5f104d37c1626b8615b511f3427aa5389b94d61e5ef8236bfbc3ddb"},
+    {file = "more-itertools-8.13.0.tar.gz", hash = "sha256:a42901a0a5b169d925f6f217cd5a190e32ef54360905b9c39ee7db5313bfec0f"},
 ]
 "mypy 0.950" = [
     {file = "mypy-0.950-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:cf9c261958a769a3bd38c3e133801ebcd284ffb734ea12d01457cb09eacf7d7b"},
@@ -353,6 +409,10 @@ content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d834021399
 "mypy-extensions 0.4.3" = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
     {file = "mypy_extensions-0.4.3.tar.gz", hash = "sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8"},
+]
+"overrides 6.1.0" = [
+    {file = "overrides-6.1.0-py3-none-any.whl", hash = "sha256:33926e018a952b06309517b3febede982112b86430e588bdd00560b80a4a800b"},
+    {file = "overrides-6.1.0.tar.gz", hash = "sha256:5ba636b73bf72d3d80550f4a5dfe3c7d04ec6e8fd246c4074bfc7ad82bd0ea3d"},
 ]
 "packaging 21.3" = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
@@ -421,9 +481,13 @@ content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d834021399
 "pydotplus 2.0.2" = [
     {file = "pydotplus-2.0.2.tar.gz", hash = "sha256:91e85e9ee9b85d2391ead7d635e3d9c7f5f44fd60a60e59b13e2403fa66505c4"},
 ]
-"pyparsing 3.0.8" = [
-    {file = "pyparsing-3.0.8-py3-none-any.whl", hash = "sha256:ef7b523f6356f763771559412c0d7134753f037822dad1b16945b7b846f7ad06"},
-    {file = "pyparsing-3.0.8.tar.gz", hash = "sha256:7bf433498c016c4314268d95df76c81b842a4cb2b276fa3312cfb1e1d85f6954"},
+"pyparsing 3.0.9" = [
+    {file = "pyparsing-3.0.9-py3-none-any.whl", hash = "sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc"},
+    {file = "pyparsing-3.0.9.tar.gz", hash = "sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb"},
+]
+"pyreadline3 3.4.1" = [
+    {file = "pyreadline3-3.4.1-py3-none-any.whl", hash = "sha256:b0efb6516fd4fb07b45949053826a62fa4cb353db5be2bbb4a7aa1fdd1e345fb"},
+    {file = "pyreadline3-3.4.1.tar.gz", hash = "sha256:6f3d1f7b8a31ba32b73917cefc1f28cc660562f39aea8646d30bd6eff21f7bae"},
 ]
 "pytest 7.1.2" = [
     {file = "pytest-7.1.2-py3-none-any.whl", hash = "sha256:13d0e3ccfc2b6e26be000cb6568c832ba67ba32e719443bfe725814d3c42433c"},
@@ -463,9 +527,9 @@ content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d834021399
     {file = "ruamel.yaml.clib-0.2.6-cp39-cp39-win_amd64.whl", hash = "sha256:825d5fccef6da42f3c8eccd4281af399f21c02b32d98e113dbc631ea6a6ecbc7"},
     {file = "ruamel.yaml.clib-0.2.6.tar.gz", hash = "sha256:4ff604ce439abb20794f05613c374759ce10e3595d1867764dd1ae675b85acbd"},
 ]
-"setuptools 62.1.0" = [
-    {file = "setuptools-62.1.0-py3-none-any.whl", hash = "sha256:26ead7d1f93efc0f8c804d9fafafbe4a44b179580a7105754b245155f9af05a8"},
-    {file = "setuptools-62.1.0.tar.gz", hash = "sha256:47c7b0c0f8fc10eec4cf1e71c6fdadf8decaa74ffa087e68cd1c20db7ad6a592"},
+"setuptools 62.3.0" = [
+    {file = "setuptools-62.3.0-py3-none-any.whl", hash = "sha256:512dfeb3cca6747fd9074f91d8cd4714b50d0d8726b3f6a25f8c33ee9ad22b5a"},
+    {file = "setuptools-62.3.0.tar.gz", hash = "sha256:d4eebe23c2ed4d73fa69d4f78e4b59b9648cbd22c43018ee2e8b911866535463"},
 ]
 "six 1.16.0" = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
@@ -479,14 +543,18 @@ content_hash = "sha256:701bc9069f3948a038844c07257b1da1d9e4cda9a5cc841d834021399
     {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},
     {file = "typing_extensions-4.2.0.tar.gz", hash = "sha256:f1c24655a0da0d1b67f07e17a5e6b2a105894e6824b92096378bb3668ef02376"},
 ]
+"typing-utils 0.1.0" = [
+    {file = "typing_utils-0.1.0-py3-none-any.whl", hash = "sha256:6bd26f3d38a5dd526ca3a59f0a451ccb59bcee9dc829c872dd6c0aae4ec8bbef"},
+    {file = "typing_utils-0.1.0.tar.gz", hash = "sha256:8ff6b6705414b82575ad5ae0925ac414a9650fb8c5718289b1327dec61252f65"},
+]
 "wcwidth 0.2.5" = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
     {file = "wcwidth-0.2.5.tar.gz", hash = "sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83"},
 ]
-"z3-solver 4.8.16.0" = [
-    {file = "z3_solver-4.8.16.0-py2.py3-none-macosx_10_16_x86_64.whl", hash = "sha256:0e6ebe511bf2ae51da6aa7b69f1588760255339495cf99f1f9959815b1cfc5b7"},
-    {file = "z3_solver-4.8.16.0-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:34ca1e605f752b6aa8a003af3d8679d045f0dfbb5d3ddde26cb01256c0ad5246"},
-    {file = "z3_solver-4.8.16.0-py2.py3-none-win32.whl", hash = "sha256:ced3ff653407350f8c00a9aa0365ba31a2243d99cf114e9a920e86207177cd39"},
-    {file = "z3_solver-4.8.16.0-py2.py3-none-win_amd64.whl", hash = "sha256:f0d5aecda8c4beb456aed7bffc0f7428c394260508622e5e50ace7e03139f61b"},
-    {file = "z3-solver-4.8.16.0.tar.gz", hash = "sha256:a84ade2852d4c3ca2ae32a3ddc554b8f3da6d5d69efd474b5627ab6db509e787"},
+"z3-solver 4.8.17.0" = [
+    {file = "z3_solver-4.8.17.0-py2.py3-none-macosx_10_16_x86_64.whl", hash = "sha256:db526f27c1dce8c3c1f0b4eaebae0e9f3ab9bc0940578af8f9923c1fc22aa6e0"},
+    {file = "z3_solver-4.8.17.0-py2.py3-none-manylinux1_x86_64.whl", hash = "sha256:00efe464e61fdcdb1d1b7821269ff2449817ae1a5f3a4cb9b47640a82f109eb2"},
+    {file = "z3_solver-4.8.17.0-py2.py3-none-win32.whl", hash = "sha256:f1b2a10befac07b44bc4388b7ac9a01d72b82c6c424bc9607b4b13c3616d90f4"},
+    {file = "z3_solver-4.8.17.0-py2.py3-none-win_amd64.whl", hash = "sha256:72284c94b5310724c38202776873788e46213237aecbe2882bad61b4c9739826"},
+    {file = "z3-solver-4.8.17.0.tar.gz", hash = "sha256:67abd61898039d6c8c07196949d2962f461402b670a137b2347a65c3c1890f73"},
 ]
