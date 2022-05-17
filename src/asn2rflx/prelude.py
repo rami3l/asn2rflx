@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum, unique
 from functools import reduce
+from itertools import starmap
 from typing import Protocol, cast
 
 import rflx.model as model
 from asn1tools.codecs.ber import Class as AsnTagClass
-from asn1tools.codecs.ber import Encoding as AsnTagForm
 from asn1tools.codecs.ber import Tag as AsnTagNum
 from more_itertools import flatten, windowed
 from overrides import overrides
@@ -14,9 +14,12 @@ from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
 
-from asn2rflx.utils import pub_vars
-
 PRELUDE_NAME: str = "Prelude"
+
+
+class AsnTagForm:
+    PRIMITIVE = 0
+    CONSTRUCTED = 1
 
 
 @dataclass
@@ -34,17 +37,7 @@ class AsnTag:
             f("Form"): ASN_TAG_FORM_TY,
             f("Num"): ASN_TAG_NUM_TY,
         }
-        links = [
-            Link(*pair)
-            for pair in windowed(
-                [
-                    INITIAL,
-                    *fields.keys(),
-                    FINAL,
-                ],
-                2,
-            )
-        ]
+        links = [Link(*pair) for pair in windowed([INITIAL, *fields.keys(), FINAL], 2)]
         return model.Message(ID([PRELUDE_NAME, "Asn_Tag"]), links, fields)
 
     def matches(self, ident: str) -> Expr:
