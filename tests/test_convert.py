@@ -28,9 +28,9 @@ def test_foo(converter: AsnTypeConverter):
                   Tag_Form : Prelude::Asn_Tag_Form;
                   Tag_Num : Prelude::Asn_Tag_Num
                      then null
-                        if not (Tag_Num = 16
-                            and Tag_Class = 0
-                            and Tag_Form = 1)
+                        if Tag_Num /= 16
+                           or Tag_Class /= 0
+                           or Tag_Form /= 1
                      then Untagged_Length
                         if Tag_Num = 16
                            and Tag_Class = 0
@@ -44,9 +44,9 @@ def test_foo(converter: AsnTypeConverter):
                            and Untagged_Value_id_Tag_Class = 0
                            and Untagged_Value_id_Tag_Form = 0
                      then Untagged_Value_question_Tag_Class
-                        if not (Tag_Num = 2
-                            and Tag_Class = 0
-                            and Tag_Form = 0);
+                        if Untagged_Value_id_Tag_Num /= 2
+                           or Untagged_Value_id_Tag_Class /= 0
+                           or Untagged_Value_id_Tag_Form /= 0;
                   Untagged_Value_id_Untagged_Length : Prelude::Asn_Length
                      then Untagged_Value_id_Untagged_Value
                         with Size => Untagged_Value_id_Untagged_Length * 8;
@@ -55,9 +55,9 @@ def test_foo(converter: AsnTypeConverter):
                   Untagged_Value_question_Tag_Form : Prelude::Asn_Tag_Form;
                   Untagged_Value_question_Tag_Num : Prelude::Asn_Tag_Num
                      then null
-                        if not (Tag_Num = 22
-                            and Tag_Class = 0
-                            and Tag_Form = 0)
+                        if Untagged_Value_question_Tag_Num /= 22
+                           or Untagged_Value_question_Tag_Class /= 0
+                           or Untagged_Value_question_Tag_Form /= 0
                      then Untagged_Value_question_Untagged_Length
                         if Untagged_Value_question_Tag_Num = 22
                            and Untagged_Value_question_Tag_Class = 0
@@ -76,9 +76,9 @@ def test_foo(converter: AsnTypeConverter):
                   Tag_Form : Prelude::Asn_Tag_Form;
                   Tag_Num : Prelude::Asn_Tag_Num
                      then null
-                        if not (Tag_Num = 16
-                            and Tag_Class = 0
-                            and Tag_Form = 1)
+                        if Tag_Num /= 16
+                           or Tag_Class /= 0
+                           or Tag_Form /= 1
                      then Untagged_Length
                         if Tag_Num = 16
                            and Tag_Class = 0
@@ -88,9 +88,9 @@ def test_foo(converter: AsnTypeConverter):
                   Untagged_Value_id_Tag_Form : Prelude::Asn_Tag_Form;
                   Untagged_Value_id_Tag_Num : Prelude::Asn_Tag_Num
                      then Untagged_Value_answer_Tag_Class
-                        if not (Tag_Num = 2
-                            and Tag_Class = 0
-                            and Tag_Form = 0)
+                        if Untagged_Value_id_Tag_Num /= 2
+                           or Untagged_Value_id_Tag_Class /= 0
+                           or Untagged_Value_id_Tag_Form /= 0
                      then Untagged_Value_id_Untagged_Length
                         if Untagged_Value_id_Tag_Num = 2
                            and Untagged_Value_id_Tag_Class = 0
@@ -103,18 +103,16 @@ def test_foo(converter: AsnTypeConverter):
                   Untagged_Value_answer_Tag_Form : Prelude::Asn_Tag_Form;
                   Untagged_Value_answer_Tag_Num : Prelude::Asn_Tag_Num
                      then null
-                        if not (Tag_Num = 1
-                            and Tag_Class = 0
-                            and Tag_Form = 0)
+                        if Untagged_Value_answer_Tag_Num /= 1
+                           or Untagged_Value_answer_Tag_Class /= 0
+                           or Untagged_Value_answer_Tag_Form /= 0
                      then Untagged_Value_answer_Untagged_Length
                         if Untagged_Value_answer_Tag_Num = 1
                            and Untagged_Value_answer_Tag_Class = 0
                            and Untagged_Value_answer_Tag_Form = 0;
                   Untagged_Value_answer_Untagged_Length : Prelude::Asn_Length
-                     then null
-                        if Untagged_Value_answer_Untagged_Length'Length /= Prelude::Asn_Raw_BOOLEAN'Length
                      then Untagged_Value_answer_Untagged_Value
-                        if Untagged_Value_answer_Untagged_Length'Length = Prelude::Asn_Raw_BOOLEAN'Length;
+                        if Untagged_Value_answer_Untagged_Length'Size = Prelude::Asn_Raw_BOOLEAN'Size;
                   Untagged_Value_answer_Untagged_Value : Prelude::Asn_Raw_BOOLEAN;
                end message"""
         ),

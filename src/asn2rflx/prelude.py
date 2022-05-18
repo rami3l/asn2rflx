@@ -10,7 +10,7 @@ from overrides import overrides
 
 from asn2rflx.rflx import to_simple_message
 from rflx import model
-from rflx.expression import And, Equal, Expr, Mul, Not, Number, Size, Variable
+from rflx.expression import And, Equal, Expr, Mul, NotEqual, Number, Or, Size, Variable
 from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
@@ -42,14 +42,18 @@ class AsnTag:
             },
         )
 
+    # HACK: There's no `not` operator in RecordFlux, so a `negate` flag is required.
     @lru_cache(16)
-    def matches(self, ident: str) -> Expr:
+    def matches(self, ident: str, negate: bool = False) -> Expr:
         kvs = {"Class": self.class_, "Form": self.form, "Num": self.num}
         eqs = (
-            cast(Expr, Equal(Variable(f"{ident}_{k}"), Number(v)))
+            cast(
+                Expr,
+                (NotEqual if negate else Equal)(Variable(f"{ident}_{k}"), Number(v)),
+            )
             for k, v in kvs.items()
         )
-        return reduce(And, eqs)
+        return reduce(Or if negate else And, eqs)
 
 
 @unique
@@ -98,10 +102,12 @@ class BerType(Protocol):
         # TODO: Handle non-universal tag (TAG_CLASS).
         f = Field
         tag_match = self.tag.matches("Tag")
+        # HACK: There's no `not` operator in RecordFlux, so a `negate` flag is required.
+        not_tag_match = self.tag.matches("Tag", negate=True)
         links = [
             Link(INITIAL, f("Tag")),
             # If the current tag is not what we want, then directly jump to FINAL.
-            Link(f("Tag"), FINAL, condition=Not(tag_match)),
+            Link(f("Tag"), FINAL, condition=not_tag_match),
             Link(f("Tag"), f("Untagged"), condition=tag_match),
             Link(f("Untagged"), FINAL),
         ]
