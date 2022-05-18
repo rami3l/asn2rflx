@@ -3,9 +3,9 @@ from pathlib import Path
 
 import coloredlogs
 from more_itertools import flatten
-from rflx.model.model import Model
 
 from asn2rflx.prelude import MODEL, OCTET_STRING, SequenceOfBerType
+from rflx.model.model import Model
 
 
 def greeting() -> str:
@@ -19,7 +19,7 @@ def main() -> None:
     outpath = Path("./build/rflx/specs/")
     logging.info(f"Writing specs to `{outpath.absolute()}`...")
     outpath.mkdir(parents=True, exist_ok=True)
-    sequence_of_types = [SequenceOfBerType("Test", OCTET_STRING)]
+    sequence_of_types = [SequenceOfBerType("Test", OCTET_STRING.tlv_ty())]
     model = Model(
         types=[
             *MODEL.types[:],

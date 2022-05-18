@@ -5,8 +5,10 @@ from typing import Protocol, cast
 
 from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
-from more_itertools import flatten, windowed
+from more_itertools import flatten
 from overrides import overrides
+
+from asn2rflx.rflx import to_simple_message
 from rflx import model
 from rflx.expression import And, Equal, Expr, Length, Mul, Not, Number, Variable
 from rflx.identifier import ID
@@ -31,14 +33,14 @@ class AsnTag:
     @lru_cache(16)
     def ty(cls) -> model.Type:
         """The ASN Tag message type in RecordFlux."""
-        f = Field
-        fields = {
-            f("Class"): ASN_TAG_CLASS_TY,
-            f("Form"): ASN_TAG_FORM_TY,
-            f("Num"): ASN_TAG_NUM_TY,
-        }
-        links = [Link(*pair) for pair in windowed([INITIAL, *fields.keys(), FINAL], 2)]
-        return model.Message(ID([PRELUDE_NAME, "Asn_Tag"]), links, fields)
+        return to_simple_message(
+            ID([PRELUDE_NAME, "Asn_Tag"]),
+            {
+                "Class": ASN_TAG_CLASS_TY,
+                "Form": ASN_TAG_FORM_TY,
+                "Num": ASN_TAG_NUM_TY,
+            },
+        )
 
     @lru_cache(16)
     def matches(self, ident: str) -> Expr:
@@ -176,20 +178,20 @@ class SequenceOfBerType(BerType):
 
     @property
     def ident(self) -> str:
-        return "SEQUENCE_OF_" + self.elem_v_ty.ident
+        return "SEQUENCE_OF_" + self.elem_tlv_ty.name
 
     @property
     def tag(self) -> AsnTag:
         return AsnTag(form=AsnTagForm.CONSTRUCTED, num=AsnTagNum.SEQUENCE)
 
-    elem_v_ty: BerType
+    elem_tlv_ty: model.Type
 
     @lru_cache(16)
     @overrides
     def v_ty(self) -> model.Type:
         return model.Sequence(
             ID(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
-            self.elem_v_ty.tlv_ty(),
+            self.elem_tlv_ty,
         )
 
 
@@ -258,9 +260,9 @@ BER_TYPES = [
     PrintableString := SimpleBerType(
         PRELUDE_NAME, "PrintableString", AsnTag(num=AsnTagNum.PRINTABLE_STRING)
     ),
-    T61String := SimpleBerType(
-        PRELUDE_NAME, "T61String", AsnTag(num=AsnTagNum.T61_STRING)
-    ),
+    # T61String := SimpleBerType(
+    #     PRELUDE_NAME, "T61String", AsnTag(num=AsnTagNum.T61_STRING)
+    # ),
     IA5String := SimpleBerType(
         PRELUDE_NAME, "IA5String", AsnTag(num=AsnTagNum.IA5_STRING)
     ),
