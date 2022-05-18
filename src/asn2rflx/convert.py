@@ -60,9 +60,11 @@ class AsnTypeConverter:
     @convert.register  # type: ignore [no-redef]
     def _(self, message: ber.Sequence) -> model.Type:
         fields = cast(list[ber.Type], message.root_members)
-        return to_simple_message(
-            ID([self.base_path, message.name]),
-            {field.name: self.convert(field) for field in fields},
+        return prelude.SequenceBerType(
+            to_simple_message(
+                ID([self.base_path, message.name]),
+                {field.name: self.convert(field) for field in fields},
+            )
         )
 
     @convert.register  # type: ignore [no-redef]

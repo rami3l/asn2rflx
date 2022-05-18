@@ -14,4 +14,4 @@ def to_simple_message(
     """
     fields_ = {Field(f): t for f, t in fields.items()}
     links = [Link(*pair) for pair in windowed([INITIAL, *fields_.keys(), FINAL], 2)]
-    return model.Message(ident, links, fields_)
+    return model.UnprovenMessage(ident, links, fields_).merged()

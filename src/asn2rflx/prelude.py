@@ -169,6 +169,27 @@ class DefiniteBerType(SimpleBerType):
 
 
 @dataclass(frozen=True)
+class SequenceBerType(BerType):
+    _v_ty: model.Type
+
+    @overrides
+    def v_ty(self) -> model.Type:
+        return self._v_ty
+
+    @property
+    def path(self) -> str:
+        return str(self._v_ty.package)
+
+    @property
+    def ident(self) -> str:
+        return self._v_ty.name
+
+    @property
+    def tag(self) -> AsnTag:
+        return AsnTag(form=AsnTagForm.CONSTRUCTED, num=AsnTagNum.SEQUENCE)
+
+
+@dataclass(frozen=True)
 class SequenceOfBerType(BerType):
     _path: str
 
