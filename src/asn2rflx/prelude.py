@@ -10,7 +10,7 @@ from overrides import overrides
 
 from asn2rflx.rflx import to_simple_message
 from rflx import model
-from rflx.expression import And, Equal, Expr, Length, Mul, Not, Number, Variable
+from rflx.expression import And, Equal, Expr, Mul, Not, Number, Size, Variable
 from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
@@ -157,7 +157,7 @@ class DefiniteBerType(SimpleBerType):
             # Special case for NULL, since its v_ty is `null message`.
             links.append(Link(f("Length"), FINAL))
         else:
-            len_match = Equal(Length("Length"), Length(v_ty.full_name))
+            len_match = Equal(Size("Length"), Size(v_ty.full_name))
             links += [
                 Link(f("Length"), FINAL, condition=-len_match),
                 Link(f("Length"), f("Value"), condition=len_match),
