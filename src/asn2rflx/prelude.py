@@ -90,7 +90,7 @@ class BerType(Protocol):
         ]
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
         full_ident = ID(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
-        return model.UnprovenMessage(full_ident, links, fields).merged()
+        return model.UnprovenMessage(full_ident, links, fields).merged().proven()
 
     @lru_cache(16)
     def tlv_ty(self) -> model.Type:
@@ -107,7 +107,7 @@ class BerType(Protocol):
         ]
         fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): self.lv_ty()}
         full_ident = ID(list(filter(None, [self.path, self.ident])))
-        return model.UnprovenMessage(full_ident, links, fields).merged()
+        return model.UnprovenMessage(full_ident, links, fields).merged().proven()
 
 
 @dataclass(frozen=True)
