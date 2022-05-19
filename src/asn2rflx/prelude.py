@@ -8,7 +8,7 @@ from asn1tools.codecs.ber import Tag as AsnTagNum
 from more_itertools import flatten
 from overrides import overrides
 
-from asn2rflx.rflx import to_simple_message
+from asn2rflx.rflx import simple_message
 from rflx import model
 from rflx.expression import And, Equal, Expr, Mul, NotEqual, Number, Or, Size, Variable
 from rflx.identifier import ID
@@ -33,7 +33,7 @@ class AsnTag:
     @lru_cache(16)
     def ty(cls) -> model.Type:
         """The ASN Tag message type in RecordFlux."""
-        return to_simple_message(
+        return simple_message(
             ID([PRELUDE_NAME, "Asn_Tag"]),
             {
                 "Class": ASN_TAG_CLASS_TY,
@@ -74,6 +74,11 @@ class BerType(Protocol):
         raise NotImplementedError
 
     @property
+    def full_ident(self) -> ID:
+        """The fully qualified identifier of this type, eg. `Prelude::INTEGER`."""
+        return ID(list(filter(None, [self.path, self.ident])))
+
+    @property
     def tag(self) -> AsnTag:
         raise NotImplementedError
 
@@ -112,8 +117,7 @@ class BerType(Protocol):
             Link(f("Untagged"), FINAL),
         ]
         fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): self.lv_ty()}
-        full_ident = ID(list(filter(None, [self.path, self.ident])))
-        return model.UnprovenMessage(full_ident, links, fields).merged().proven()
+        return model.UnprovenMessage(self.full_ident, links, fields).merged().proven()
 
 
 @dataclass(frozen=True)

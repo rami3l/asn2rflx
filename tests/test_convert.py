@@ -1,25 +1,51 @@
 from textwrap import dedent
-from typing import cast
+from typing import Mapping, cast
 
 import asn1tools as asn1
-from asn1tools.codecs.ber import CompiledType
+from asn1tools.codecs import ber
+from asn2rflx import prelude
 from asn2rflx.convert import AsnTypeConverter
 from pytest import fixture
+from rflx import model
+from rflx.identifier import ID
+from rflx.model.model import Model
+from rflx.pyrflx import PyRFLX
 
 ASSETS = "assets/"
 
 
-@fixture
-def converter():
-    return AsnTypeConverter(base_path="Converter")
+@fixture(scope="session")
+def foo() -> dict[ID, model.Type]:
+    spec = asn1.compile_files(ASSETS + "foo.asn")
+    cvt = AsnTypeConverter()
+    res: dict[ID, model.Type] = {}
+    for path, tys in spec.modules.items():
+        res |= {
+            (ty1 := cvt.convert(ty.type, path).tlv_ty()).qualified_identifier: ty1
+            for ty in tys.values()
+        }
+    return res
 
 
-def test_foo(converter: AsnTypeConverter):
-    foo = asn1.compile_files(ASSETS + "foo.asn")
-    assert {
-        str(converter.convert(cast(CompiledType, ty).type).tlv_ty())
-        for ty in foo.types.values()
-    } == {
+def test_foo_encode(foo: dict[ID, model.Type]) -> None:
+    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *foo.values()]))
+    pkg = model.package("Foo")
+
+    got = pkg.new_message("Question")
+    # TODO: I cannot test it this way because there's no "id" in the underlying RFLX message!
+    # got.set("id", 5)
+    # got.set("question", "Anybody there?")
+
+    (expected := pkg.new_message("Question")).parse(
+        b"\x30\x13\x02\x01\x05\x16\x0e\x41\x6e\x79\x62"
+        b"\x6f\x64\x79\x20\x74\x68\x65\x72\x65\x3f"
+    )
+
+    assert got == expected
+
+
+def test_foo_dump(foo: dict[ID, model.Type]) -> None:
+    assert {str(ty) for ty in foo.values()} == {
         dedent(
             """\
             type Question is

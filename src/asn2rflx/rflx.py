@@ -5,7 +5,7 @@ from rflx.identifier import StrID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 
 
-def to_simple_message(ident: StrID, fields: dict[StrID, model.Type]) -> model.Message:
+def simple_message(ident: StrID, fields: dict[StrID, model.Type]) -> model.Message:
     """
     Returns a simple RecordFlux message (record/struct) out of a mapping from field
     names to their repective types.

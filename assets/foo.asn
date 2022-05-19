@@ -1,3 +1,5 @@
+-- Source: https://en.wikipedia.org/wiki/ASN.1#Example
+
 Foo DEFINITIONS ::= BEGIN
 
     Question ::= SEQUENCE {
