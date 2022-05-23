@@ -17,7 +17,14 @@ def foo() -> dict[ID, model.Type]:
     return AsnTypeConverter().convert_spec(asn1.compile_files(ASSETS + "foo.asn"))
 
 
-def test_foo_encode(foo: dict[ID, model.Type]) -> None:
+@fixture(scope="session")
+def rocket() -> dict[ID, model.Type]:
+    return AsnTypeConverter().convert_spec(
+        asn1.compile_files(ASSETS + "rocket_mod.asn")
+    )
+
+
+def test_foo_decode(foo: dict[ID, model.Type]) -> None:
     model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *foo.values()]))
     pkg = model.package("Foo")
 
@@ -132,3 +139,28 @@ def test_foo_dump(foo: dict[ID, model.Type]) -> None:
                end message"""
         ),
     }
+
+
+def test_rocket_decode(rocket: dict[ID, model.Type]) -> None:
+    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *rocket.values()]))
+    pkg = model.package("World-Schema")
+
+    (expected := pkg.new_message("Rocket")).parse(
+        bytes.fromhex(
+            "301C"  # SEQUENCE
+            "0202"  # INTEGER
+            "0080"  # 128
+            "0406"  # OCTET STRING
+            "414141"  # "AAAAAA"
+            "0603"  # OBJECT IDENTIFIER
+            "2A0304"  # "1.2.3.4"
+            "3009"  # SEQUENCE OF
+            "020105"  # INTEGER : 5
+            "020106"  # INTEGER : 6
+            "020107"  # INTEGER : 7
+        )
+    )
+
+    assert expected.get("Untagged_Value_range_Untagged_Value") == b"\x00\x80"
+    assert expected.get("Untagged_Value_name_Untagged_Value") == b"AAAAAA"
+    assert expected.get("Untagged_Value_ident_Untagged_Value") == b"\x2a\x03\x04"

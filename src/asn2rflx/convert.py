@@ -6,7 +6,6 @@ import asn1tools as asn1
 from asn1tools.codecs import ber
 
 from asn2rflx import prelude
-from asn2rflx.rflx import simple_message
 from rflx import model
 from rflx.identifier import ID, StrID
 
@@ -62,10 +61,8 @@ class AsnTypeConverter:
     def _(self, message: ber.Sequence, relpath: StrID = "") -> prelude.BerType:
         fields = cast(list[ber.Type], message.root_members)
         return prelude.SequenceBerType(
-            simple_message(
-                ID(list(filter(None, [self.base_path, relpath, message.name]))),
-                {field.name: self.convert(field) for field in fields},
-            )
+            ID(list(filter(None, [self.base_path, relpath, message.name]))),
+            {field.name: self.convert(field) for field in fields},
         )
 
     @convert.register  # type: ignore [no-redef]

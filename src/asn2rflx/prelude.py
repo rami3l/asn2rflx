@@ -7,10 +7,10 @@ from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
 from overrides import overrides
 
-from asn2rflx.rflx import simple_message
+from asn2rflx.rflx import simple_message, tagged_union_message
 from rflx import model
 from rflx.expression import And, Equal, Expr, Mul, NotEqual, Number, Or, Size, Variable
-from rflx.identifier import ID
+from rflx.identifier import ID, StrID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
 
@@ -103,20 +103,25 @@ class BerType(Protocol):
     @lru_cache(16)
     def tlv_ty(self) -> model.Type:
         """The tag-length-value (TLV) encoding of this type."""
-        # TODO: Handle non-universal tag (TAG_CLASS).
-        f = Field
-        tag_match = self.tag.matches("Tag")
-        # HACK: There's no `not` operator in RecordFlux, so a `negate` flag is required.
-        not_tag_match = self.tag.matches("Tag", negate=True)
-        links = [
-            Link(INITIAL, f("Tag")),
-            # If the current tag is not what we want, then directly jump to FINAL.
-            Link(f("Tag"), FINAL, condition=not_tag_match),
-            Link(f("Tag"), f("Untagged"), condition=tag_match),
-            Link(f("Untagged"), FINAL),
-        ]
-        fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): self.lv_ty()}
-        return model.UnprovenMessage(self.full_ident, links, fields).merged().proven()
+        try:
+            lv_ty = self.lv_ty()
+            f = Field
+            tag_match = self.tag.matches("Tag")
+            # HACK: There's no `not` operator in RecordFlux, so a `negate` flag is required.
+            not_tag_match = self.tag.matches("Tag", negate=True)
+            links = [
+                Link(INITIAL, f("Tag")),
+                # If the current tag is not what we want, then directly jump to FINAL.
+                Link(f("Tag"), FINAL, condition=not_tag_match),
+                Link(f("Tag"), f("Untagged"), condition=tag_match),
+                Link(f("Untagged"), FINAL),
+            ]
+            fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): lv_ty}
+            return (
+                model.UnprovenMessage(self.full_ident, links, fields).merged().proven()
+            )
+        except NotImplementedError:
+            return self.v_ty()
 
 
 @dataclass(frozen=True)
@@ -177,21 +182,25 @@ class DefiniteBerType(SimpleBerType):
         return model.Message(full_ident, links, fields)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class SequenceBerType(BerType):
-    _v_ty: model.Type
+    _ident: StrID
+    fields: dict[StrID, BerType]
 
     @overrides
+    @lru_cache(1)
     def v_ty(self) -> model.Type:
-        return self._v_ty
+        return simple_message(
+            self._ident, {f: t.tlv_ty() for f, t in self.fields.items()}
+        )
 
     @property
     def path(self) -> str:
-        return str(self._v_ty.package)
+        return str(self.v_ty.package)
 
     @property
     def ident(self) -> str:
-        return self._v_ty.name
+        return self.v_ty.name
 
     @property
     def tag(self) -> AsnTag:
@@ -223,6 +232,32 @@ class SequenceOfBerType(BerType):
             ID(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
             self.elem_tlv_ty,
         )
+
+
+@dataclass(frozen=True, init=False)
+class ChoiceBerType(BerType):
+    _ident: StrID
+    variants: dict[StrID, BerType]
+
+    @overrides
+    @lru_cache(1)
+    def v_ty(self) -> model.Type:
+        try:
+            return tagged_union_message(
+                self._ident, {f: (t.tag, t.tlv_ty()) for f, t in self.variants.items()}
+            )
+        except NotImplementedError as e:
+            raise ValueError(
+                "cannot construct CHOICE from untagged or invalid BerType"
+            ) from e
+
+    @property
+    def path(self) -> str:
+        return str(self.v_ty.package)
+
+    @property
+    def ident(self) -> str:
+        return self.v_ty.name
 
 
 HELPER_TYPES = [

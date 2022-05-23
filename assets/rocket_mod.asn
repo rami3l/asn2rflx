@@ -1,17 +1,15 @@
 -- From: https://asn1.io/asn1playground/Default.aspx
---<ASN1.HugeInteger World-Schema.Rocket.range>--
-World-Schema DEFINITIONS AUTOMATIC TAGS ::= 
+World-Schema DEFINITIONS ::= 
 BEGIN
   Rocket ::= SEQUENCE       
   {
-     range     INTEGER, -- huge (see a special directive above)
+     range     INTEGER,
      name      OCTET STRING,
      ident     OBJECT IDENTIFIER, 
-     speed     CHOICE
+     payload   CHOICE
      { 
-        mph    INTEGER,  
-        kmph   INTEGER  
-     }  OPTIONAL, 
-     payload   SEQUENCE OF INTEGER
+        one    INTEGER,  
+        many   SEQUENCE OF INTEGER  
+     }
   }                                                     
 END
