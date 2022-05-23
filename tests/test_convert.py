@@ -31,17 +31,16 @@ def test_foo_encode(foo: dict[ID, model.Type]) -> None:
     model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *foo.values()]))
     pkg = model.package("Foo")
 
-    got = pkg.new_message("Question")
-    # TODO: I cannot test it this way because there's no "id" in the underlying RFLX message!
-    # got.set("id", 5)
-    # got.set("question", "Anybody there?")
-
     (expected := pkg.new_message("Question")).parse(
-        b"\x30\x13\x02\x01\x05\x16\x0e\x41\x6e\x79\x62"
-        b"\x6f\x64\x79\x20\x74\x68\x65\x72\x65\x3f"
+        b"\x30\x13"  # SEQUENCE
+        b"\x02\x01"  # INTEGER
+        b"\x05"  # 5
+        b"\x16\x0e"  # IA5String
+        b"Anybody there?"
     )
 
-    assert got == expected
+    assert expected.get("Untagged_Value_id_Untagged_Value") == b"\x05"
+    assert expected.get("Untagged_Value_question_Untagged_Value") == b"Anybody there?"
 
 
 def test_foo_dump(foo: dict[ID, model.Type]) -> None:
