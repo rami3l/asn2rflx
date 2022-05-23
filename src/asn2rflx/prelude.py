@@ -5,7 +5,6 @@ from typing import Protocol, cast
 
 from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
-from more_itertools import flatten
 from overrides import overrides
 
 from asn2rflx.rflx import simple_message
@@ -299,7 +298,5 @@ BER_TYPES = [
     ),
 ]
 
-MODEL = model.Model(
-    types=HELPER_TYPES + list(flatten([ty.lv_ty(), ty.tlv_ty()] for ty in BER_TYPES))
-)
+MODEL = model.Model(types=HELPER_TYPES + [ty.tlv_ty() for ty in BER_TYPES])
 """Base prelude without any structured types."""

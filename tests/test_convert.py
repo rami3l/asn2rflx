@@ -1,8 +1,6 @@
 from textwrap import dedent
-from typing import Mapping, cast
 
 import asn1tools as asn1
-from asn1tools.codecs import ber
 from asn2rflx import prelude
 from asn2rflx.convert import AsnTypeConverter
 from pytest import fixture
@@ -16,15 +14,7 @@ ASSETS = "assets/"
 
 @fixture(scope="session")
 def foo() -> dict[ID, model.Type]:
-    spec = asn1.compile_files(ASSETS + "foo.asn")
-    cvt = AsnTypeConverter()
-    res: dict[ID, model.Type] = {}
-    for path, tys in spec.modules.items():
-        res |= {
-            (ty1 := cvt.convert(ty.type, path).tlv_ty()).qualified_identifier: ty1
-            for ty in tys.values()
-        }
-    return res
+    return AsnTypeConverter().convert_spec(asn1.compile_files(ASSETS + "foo.asn"))
 
 
 def test_foo_encode(foo: dict[ID, model.Type]) -> None:
