@@ -1,3 +1,4 @@
+from pprint import pprint
 from textwrap import dedent
 
 import asn1tools as asn1
@@ -25,7 +26,9 @@ def rocket() -> dict[ID, model.Type]:
 
 
 def test_foo_decode(foo: dict[ID, model.Type]) -> None:
-    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *foo.values()]))
+    types = foo.values()
+    pprint({str(ty) for ty in types})
+    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
     pkg = model.package("Foo")
 
     (expected := pkg.new_message("Question")).parse(
@@ -36,12 +39,17 @@ def test_foo_decode(foo: dict[ID, model.Type]) -> None:
         b"Anybody there?"
     )
 
+    assert expected.get("Tag_Class") == 0
+    assert expected.get("Tag_Form") == 1
+    assert expected.get("Tag_Num") == 16
     assert expected.get("Untagged_Value_id_Untagged_Value") == b"\x05"
     assert expected.get("Untagged_Value_question_Untagged_Value") == b"Anybody there?"
 
 
 def test_rocket_decode(rocket: dict[ID, model.Type]) -> None:
-    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *rocket.values()]))
+    types = rocket.values()
+    pprint({str(ty) for ty in types})
+    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
     pkg = model.package("World-Schema")
 
     (expected := pkg.new_message("Rocket")).parse(
