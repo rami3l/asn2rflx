@@ -3,9 +3,9 @@ from pathlib import Path
 
 import coloredlogs
 from more_itertools import flatten
-
-from asn2rflx.prelude import MODEL, OCTET_STRING, SequenceOfBerType
 from rflx.model.model import Model
+
+from .prelude import MODEL, OCTET_STRING, SequenceOfBerType
 
 
 def greeting() -> str:

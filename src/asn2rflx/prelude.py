@@ -1,15 +1,13 @@
 from dataclasses import dataclass
 from enum import Enum, unique
 from functools import lru_cache, reduce
-from typing import Protocol, cast
+from typing import Mapping, Protocol, cast
 
 from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
-from overrides import overrides
-
-from asn2rflx.rflx import simple_message, tagged_union_message
+from more_itertools import windowed
 from rflx import model
-from rflx.expression import And, Equal, Expr, Mul, NotEqual, Number, Or, Size, Variable
+from rflx.expression import And, Equal, Expr, Mul, Not, Number, Size, Variable
 from rflx.identifier import ID, StrID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
@@ -41,18 +39,14 @@ class AsnTag:
             },
         )
 
-    # HACK: There's no `not` operator in RecordFlux, so a `negate` flag is required.
     @lru_cache(16)
-    def matches(self, ident: str, negate: bool = False) -> Expr:
+    def matches(self, ident: str) -> Expr:
         kvs = {"Class": self.class_, "Form": self.form, "Num": self.num}
         eqs = (
-            cast(
-                Expr,
-                (NotEqual if negate else Equal)(Variable(f"{ident}_{k}"), Number(v)),
-            )
+            cast(Expr, Equal(Variable(f"{ident}_{k}"), Number(v)))
             for k, v in kvs.items()
         )
-        return reduce(Or if negate else And, eqs)
+        return reduce(And, eqs)
 
 
 @unique
@@ -107,12 +101,10 @@ class BerType(Protocol):
             lv_ty = self.lv_ty()
             f = Field
             tag_match = self.tag.matches("Tag")
-            # HACK: There's no `not` operator in RecordFlux, so a `negate` flag is required.
-            not_tag_match = self.tag.matches("Tag", negate=True)
             links = [
                 Link(INITIAL, f("Tag")),
                 # If the current tag is not what we want, then directly jump to FINAL.
-                Link(f("Tag"), FINAL, condition=not_tag_match),
+                Link(f("Tag"), FINAL, condition=Not(tag_match)),
                 Link(f("Tag"), f("Untagged"), condition=tag_match),
                 Link(f("Untagged"), FINAL),
             ]
@@ -152,12 +144,10 @@ class DefiniteBerType(SimpleBerType):
     _v_ty: model.Type
 
     @lru_cache(16)
-    @overrides
     def v_ty(self) -> model.Type:
         return self._v_ty
 
     @lru_cache(16)
-    @overrides
     def lv_ty(self) -> model.Type:
         """The `UNTAGGED`, length-value (LV) encoding of this type."""
         f = Field
@@ -182,12 +172,11 @@ class DefiniteBerType(SimpleBerType):
         return model.Message(full_ident, links, fields)
 
 
-@dataclass(frozen=True, init=False)
+@dataclass(frozen=True)
 class SequenceBerType(BerType):
     _ident: StrID
-    fields: dict[StrID, BerType]
+    fields: Mapping[StrID, BerType]
 
-    @overrides
     @lru_cache(1)
     def v_ty(self) -> model.Type:
         return simple_message(
@@ -196,11 +185,11 @@ class SequenceBerType(BerType):
 
     @property
     def path(self) -> str:
-        return str(self.v_ty.package)
+        return str(self.v_ty().package)
 
     @property
     def ident(self) -> str:
-        return self.v_ty.name
+        return self.v_ty().name
 
     @property
     def tag(self) -> AsnTag:
@@ -226,7 +215,6 @@ class SequenceOfBerType(BerType):
     elem_tlv_ty: model.Type
 
     @lru_cache(16)
-    @overrides
     def v_ty(self) -> model.Type:
         return model.Sequence(
             ID(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
@@ -239,7 +227,6 @@ class ChoiceBerType(BerType):
     _ident: StrID
     variants: dict[StrID, BerType]
 
-    @overrides
     @lru_cache(1)
     def v_ty(self) -> model.Type:
         try:
@@ -253,11 +240,27 @@ class ChoiceBerType(BerType):
 
     @property
     def path(self) -> str:
-        return str(self.v_ty.package)
+        return str(self.v_ty().package)
 
     @property
     def ident(self) -> str:
-        return self.v_ty.name
+        return self.v_ty().name
+
+
+def simple_message(ident: StrID, fields: dict[StrID, model.Type]) -> model.Message:
+    """
+    Returns a simple RecordFlux message (record/struct) out of a mapping from field
+    names to their repective types.
+    """
+    fields_ = {Field(f): t for f, t in fields.items()}
+    links = [Link(*pair) for pair in windowed([INITIAL, *fields_.keys(), FINAL], 2)]
+    return model.UnprovenMessage(ident, links, fields_).merged().proven()
+
+
+def tagged_union_message(
+    ident: StrID, variants: dict[StrID, tuple[AsnTag, model.Type]]
+) -> model.Message:
+    ...
 
 
 HELPER_TYPES = [

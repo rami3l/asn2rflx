@@ -4,10 +4,11 @@ from typing import cast
 
 import asn1tools as asn1
 from asn1tools.codecs import ber
-
-from asn2rflx import prelude
+from frozendict import frozendict
 from rflx import model
 from rflx.identifier import ID, StrID
+
+from . import prelude
 
 
 @dataclass
@@ -25,35 +26,35 @@ class AsnTypeConverter:
 
     @convert.register  # type: ignore [no-redef]
     def _(self, _: ber.Boolean, relpath: StrID = "") -> prelude.BerType:
-        return prelude.BOOLEAN.tlv_ty()
+        return prelude.BOOLEAN
 
     @convert.register  # type: ignore [no-redef]
     def _(self, _: ber.Null, relpath: StrID = "") -> prelude.BerType:
-        return prelude.NULL.tlv_ty()
+        return prelude.NULL
 
     @convert.register  # type: ignore [no-redef]
     def _(self, _: ber.Integer, relpath: StrID = "") -> prelude.BerType:
-        return prelude.INTEGER.tlv_ty()
+        return prelude.INTEGER
 
     @convert.register  # type: ignore [no-redef]
     def _(self, _: ber.ObjectIdentifier, relpath: StrID = "") -> prelude.BerType:
-        return prelude.OBJECT_IDENTIFIER.tlv_ty()
+        return prelude.OBJECT_IDENTIFIER
 
     @convert.register  # type: ignore [no-redef]
     def _(self, _: ber.BitString, relpath: StrID = "") -> prelude.BerType:
-        return prelude.BIT_STRING.tlv_ty()
+        return prelude.BIT_STRING
 
     @convert.register  # type: ignore [no-redef]
     def _(self, _: ber.OctetString, relpath: StrID = "") -> prelude.BerType:
-        return prelude.OCTET_STRING.tlv_ty()
+        return prelude.OCTET_STRING
 
     @convert.register  # type: ignore [no-redef]
     def _(self, _: ber.PrintableString, relpath: StrID = "") -> prelude.BerType:
-        return prelude.PrintableString.tlv_ty()
+        return prelude.PrintableString
 
     @convert.register  # type: ignore [no-redef]
     def _(self, _: ber.IA5String, relpath: StrID = "") -> prelude.BerType:
-        return prelude.IA5String.tlv_ty()
+        return prelude.IA5String
 
     # ASN.1 type constructors
 
@@ -62,7 +63,7 @@ class AsnTypeConverter:
         fields = cast(list[ber.Type], message.root_members)
         return prelude.SequenceBerType(
             ID(list(filter(None, [self.base_path, relpath, message.name]))),
-            {field.name: self.convert(field) for field in fields},
+            frozendict({field.name: self.convert(field) for field in fields}),
         )
 
     @convert.register  # type: ignore [no-redef]

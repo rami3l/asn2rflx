@@ -79,6 +79,12 @@ requires_python = ">=3"
 summary = "Disk Cache -- Disk and file backed persistent cache."
 
 [[package]]
+name = "frozendict"
+version = "2.3.2"
+requires_python = ">=3.6"
+summary = "A simple immutable dictionary"
+
+[[package]]
 name = "humanfriendly"
 version = "10.0"
 requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
@@ -122,15 +128,6 @@ dependencies = [
 name = "mypy-extensions"
 version = "0.4.3"
 summary = "Experimental type system extensions for programs checked with the mypy typechecker."
-
-[[package]]
-name = "overrides"
-version = "6.1.0"
-requires_python = ">=3.6"
-summary = "A decorator to automatically detect mismatch when overriding a method."
-dependencies = [
-    "typing-utils>=0.0.3",
-]
 
 [[package]]
 name = "packaging"
@@ -288,12 +285,6 @@ requires_python = ">=3.7"
 summary = "Backported and Experimental Type Hints for Python 3.7+"
 
 [[package]]
-name = "typing-utils"
-version = "0.1.0"
-requires_python = ">=3.6.1"
-summary = "utils to inspect Python type annotations"
-
-[[package]]
 name = "wcwidth"
 version = "0.2.5"
 summary = "Measures the displayed width of unicode strings in a terminal"
@@ -305,7 +296,7 @@ summary = "an efficient SMT solver library"
 
 [metadata]
 lock_version = "3.1"
-content_hash = "sha256:327062f708229eda46d4f60148e216621011d472bed9007ce973cd4539beecba"
+content_hash = "sha256:a379166fa54ebfee30e81b83784678d04e523e12663d6d94a14065aca2dda548"
 
 [metadata.files]
 "asn1tools 0.163.0" = [
@@ -367,6 +358,25 @@ content_hash = "sha256:327062f708229eda46d4f60148e216621011d472bed9007ce973cd453
     {file = "diskcache-5.4.0-py3-none-any.whl", hash = "sha256:af3ec6d7f167bbef7b6c33d9ee22f86d3e8f2dd7131eb7c4703d8d91ccdc0cc4"},
     {file = "diskcache-5.4.0.tar.gz", hash = "sha256:8879eb8c9b4a2509a5e633d2008634fb2b0b35c2b36192d89655dbde02419644"},
 ]
+"frozendict 2.3.2" = [
+    {file = "frozendict-2.3.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:4fb171d1e84d17335365877e19d17440373b47ca74a73c06f65ac0b16d01e87f"},
+    {file = "frozendict-2.3.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c0a3640e9d7533d164160b758351aa49d9e85bbe0bd76d219d4021e90ffa6a52"},
+    {file = "frozendict-2.3.2-cp310-cp310-win_amd64.whl", hash = "sha256:87cfd00fafbc147d8cd2590d1109b7db8ac8d7d5bdaa708ba46caee132b55d4d"},
+    {file = "frozendict-2.3.2-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:fb09761e093cfabb2f179dbfdb2521e1ec5701df714d1eb5c51fa7849027be19"},
+    {file = "frozendict-2.3.2-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:82176dc7adf01cf8f0193e909401939415a230a1853f4a672ec1629a06ceae18"},
+    {file = "frozendict-2.3.2-cp36-cp36m-win_amd64.whl", hash = "sha256:c1c70826aa4a50fa283fe161834ac4a3ac7c753902c980bb8b595b0998a38ddb"},
+    {file = "frozendict-2.3.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:1db5035ddbed995badd1a62c4102b5e207b5aeb24472df2c60aba79639d7996b"},
+    {file = "frozendict-2.3.2-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4246fc4cb1413645ba4d3513939b90d979a5bae724be605a10b2b26ee12f839c"},
+    {file = "frozendict-2.3.2-cp37-cp37m-win_amd64.whl", hash = "sha256:680cd42fb0a255da1ce45678ccbd7f69da750d5243809524ebe8f45b2eda6e6b"},
+    {file = "frozendict-2.3.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6a7f3a181d6722c92a9fab12d0c5c2b006a18ca5666098531f316d1e1c8984e3"},
+    {file = "frozendict-2.3.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b1cb866eabb3c1384a7fe88e1e1033e2b6623073589012ab637c552bf03f6364"},
+    {file = "frozendict-2.3.2-cp38-cp38-win_amd64.whl", hash = "sha256:952c5e5e664578c5c2ce8489ee0ab6a1855da02b58ef593ee728fc10d672641a"},
+    {file = "frozendict-2.3.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:608b77904cd0117cd816df605a80d0043a5326ee62529327d2136c792165a823"},
+    {file = "frozendict-2.3.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0eed41fd326f0bcc779837d8d9e1374da1bc9857fe3b9f2910195bbd5fff3aeb"},
+    {file = "frozendict-2.3.2-cp39-cp39-win_amd64.whl", hash = "sha256:bde28db6b5868dd3c45b3555f9d1dc5a1cca6d93591502fa5dcecce0dde6a335"},
+    {file = "frozendict-2.3.2-py3-none-any.whl", hash = "sha256:6882a9bbe08ab9b5ff96ce11bdff3fe40b114b9813bc6801261e2a7b45e20012"},
+    {file = "frozendict-2.3.2.tar.gz", hash = "sha256:7fac4542f0a13fbe704db4942f41ba3abffec5af8b100025973e59dff6a09d0d"},
+]
 "humanfriendly 10.0" = [
     {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
     {file = "humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc"},
@@ -410,10 +420,6 @@ content_hash = "sha256:327062f708229eda46d4f60148e216621011d472bed9007ce973cd453
 "mypy-extensions 0.4.3" = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
     {file = "mypy_extensions-0.4.3.tar.gz", hash = "sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8"},
-]
-"overrides 6.1.0" = [
-    {file = "overrides-6.1.0-py3-none-any.whl", hash = "sha256:33926e018a952b06309517b3febede982112b86430e588bdd00560b80a4a800b"},
-    {file = "overrides-6.1.0.tar.gz", hash = "sha256:5ba636b73bf72d3d80550f4a5dfe3c7d04ec6e8fd246c4074bfc7ad82bd0ea3d"},
 ]
 "packaging 21.3" = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
@@ -543,10 +549,6 @@ content_hash = "sha256:327062f708229eda46d4f60148e216621011d472bed9007ce973cd453
 "typing-extensions 4.2.0" = [
     {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},
     {file = "typing_extensions-4.2.0.tar.gz", hash = "sha256:f1c24655a0da0d1b67f07e17a5e6b2a105894e6824b92096378bb3668ef02376"},
-]
-"typing-utils 0.1.0" = [
-    {file = "typing_utils-0.1.0-py3-none-any.whl", hash = "sha256:6bd26f3d38a5dd526ca3a59f0a451ccb59bcee9dc829c872dd6c0aae4ec8bbef"},
-    {file = "typing_utils-0.1.0.tar.gz", hash = "sha256:8ff6b6705414b82575ad5ae0925ac414a9650fb8c5718289b1327dec61252f65"},
 ]
 "wcwidth 0.2.5" = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
