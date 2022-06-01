@@ -6,11 +6,14 @@ from typing import Mapping, Protocol, cast
 from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
 from more_itertools import windowed
+from more_itertools.recipes import flatten
 from rflx import model
 from rflx.expression import And, Equal, Expr, Mul, Not, Number, Size, Variable
-from rflx.identifier import ID, StrID
+from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
+
+from asn2rflx.utils import strid
 
 PRELUDE_NAME: str = "Prelude"
 
@@ -31,7 +34,7 @@ class AsnTag:
     def ty(cls) -> model.Type:
         """The ASN Tag message type in RecordFlux."""
         return simple_message(
-            ID([PRELUDE_NAME, "Asn_Tag"]),
+            strid([PRELUDE_NAME, "Asn_Tag"]),
             {
                 "Class": ASN_TAG_CLASS_TY,
                 "Form": ASN_TAG_FORM_TY,
@@ -91,7 +94,7 @@ class BerType(Protocol):
             Link(f("Value"), FINAL),
         ]
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
-        full_ident = ID(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
+        full_ident = strid(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
         return model.UnprovenMessage(full_ident, links, fields).merged().proven()
 
     @lru_cache(16)
@@ -168,28 +171,31 @@ class DefiniteBerType(SimpleBerType):
                 Link(f("Value"), FINAL),
             ]
             fields[f("Value")] = v_ty
-        full_ident = ID(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
+        full_ident = strid(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
         return model.Message(full_ident, links, fields)
 
 
 @dataclass(frozen=True)
 class SequenceBerType(BerType):
-    _ident: StrID
-    fields: Mapping[StrID, BerType]
+    _path: str
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    _ident: str
+
+    @property
+    def ident(self) -> str:
+        return self._ident
+
+    fields: Mapping[str, BerType]
 
     @lru_cache(1)
     def v_ty(self) -> model.Type:
         return simple_message(
-            self._ident, {f: t.tlv_ty() for f, t in self.fields.items()}
+            strid(self.full_ident), {f: t.tlv_ty() for f, t in self.fields.items()}
         )
-
-    @property
-    def path(self) -> str:
-        return str(self.v_ty().package)
-
-    @property
-    def ident(self) -> str:
-        return self.v_ty().name
 
     @property
     def tag(self) -> AsnTag:
@@ -217,37 +223,41 @@ class SequenceOfBerType(BerType):
     @lru_cache(16)
     def v_ty(self) -> model.Type:
         return model.Sequence(
-            ID(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
+            strid(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
             self.elem_tlv_ty,
         )
 
 
-@dataclass(frozen=True, init=False)
+@dataclass(frozen=True)
 class ChoiceBerType(BerType):
-    _ident: StrID
-    variants: dict[StrID, BerType]
+    _path: str
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    _ident: str
+
+    @property
+    def ident(self) -> str:
+        return self._ident
+
+    variants: Mapping[str, BerType]
 
     @lru_cache(1)
     def v_ty(self) -> model.Type:
         try:
             return tagged_union_message(
-                self._ident, {f: (t.tag, t.tlv_ty()) for f, t in self.variants.items()}
+                strid(self.full_ident),
+                {f: (t.tag, t.tlv_ty()) for f, t in self.variants.items()},
             )
         except NotImplementedError as e:
             raise ValueError(
                 "cannot construct CHOICE from untagged or invalid BerType"
             ) from e
 
-    @property
-    def path(self) -> str:
-        return str(self.v_ty().package)
 
-    @property
-    def ident(self) -> str:
-        return self.v_ty().name
-
-
-def simple_message(ident: StrID, fields: dict[StrID, model.Type]) -> model.Message:
+def simple_message(ident: str, fields: dict[str, model.Type]) -> model.Message:
     """
     Returns a simple RecordFlux message (record/struct) out of a mapping from field
     names to their repective types.
@@ -258,45 +268,58 @@ def simple_message(ident: StrID, fields: dict[StrID, model.Type]) -> model.Messa
 
 
 def tagged_union_message(
-    ident: StrID, variants: dict[StrID, tuple[AsnTag, model.Type]]
+    ident: str, variants: dict[str, tuple[AsnTag, model.Type]]
 ) -> model.Message:
-    ...
+    """
+    Returns a RecordFlux message representing a tagged union out of a mapping from
+    field names to a tuple containing the tag and the type for each variant.
+    """
+    fields = {Field(f): t for f, (_, t) in variants.items()}
+    links = flatten(
+        [
+            Link(INITIAL, Field(f), condition=t.matches(f)),
+            Link(INITIAL, FINAL, condition=Not(t.matches(f))),
+            Link(Field(f), FINAL),
+        ]
+        for f, (t, _) in variants.items()
+    )
+    return model.UnprovenMessage(ident, links, fields).merged().proven()
 
 
 HELPER_TYPES = [
     ASN_TAG_CLASS_TY := model.RangeInteger(
-        ID([PRELUDE_NAME, "Asn_Tag_Class"]),
+        strid([PRELUDE_NAME, "Asn_Tag_Class"]),
         first=Number(0b00),
         last=Number(0b11),
         size=Number(2),
     ),
     ASN_TAG_FORM_TY := model.RangeInteger(
-        ID([PRELUDE_NAME, "Asn_Tag_Form"]),
+        strid([PRELUDE_NAME, "Asn_Tag_Form"]),
         first=Number(0b0),
         last=Number(0b1),
         size=Number(1),
     ),
     ASN_TAG_NUM_TY := model.RangeInteger(
-        ID([PRELUDE_NAME, "Asn_Tag_Num"]),
+        strid([PRELUDE_NAME, "Asn_Tag_Num"]),
         first=Number(0b00000),
         last=Number(0b11111),
         size=Number(5),
     ),
     ASN_TAG_TY := AsnTag.ty(),
     ASN_LENGTH_TY := model.RangeInteger(
-        ID([PRELUDE_NAME, "Asn_Length"]),
+        strid([PRELUDE_NAME, "Asn_Length"]),
         first=Number(0x00),
         last=Number(0x7F),
         size=Number(8),
     ),
     ASN_RAW_BOOLEAN_TY := model.Enumeration(
-        ID([PRELUDE_NAME, "Asn_Raw_BOOLEAN"]),
+        strid([PRELUDE_NAME, "Asn_Raw_BOOLEAN"]),
         literals=[(i.name, Number(i.value)) for i in AsnRawBoolean],
         size=Number(8),
         always_valid=False,
     ),
     ASN_RAW_NULL_TY := model.Message(
-        ID([PRELUDE_NAME, "Asn_Raw_NULL"]),
+        strid([PRELUDE_NAME, "Asn_Raw_NULL"]),
         structure=[],
         types={},
         # HACK: See https://github.com/Componolit/RecordFlux/blob/79de5e735fa0ce9889f2dd60efc156ec5b743d11/tests/data/models.py#L40

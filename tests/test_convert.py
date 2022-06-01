@@ -1,5 +1,4 @@
 from pprint import pprint
-from textwrap import dedent
 
 import asn1tools as asn1
 from asn2rflx import prelude
