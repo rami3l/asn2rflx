@@ -249,7 +249,7 @@ class ChoiceBerType(BerType):
         try:
             return tagged_union_message(
                 strid(self.full_ident),
-                {f: (t.tag, t.tlv_ty()) for f, t in self.variants.items()},
+                {f: (t.tag, t.lv_ty()) for f, t in self.variants.items()},
             )
         except NotImplementedError as e:
             raise ValueError(
@@ -274,15 +274,20 @@ def tagged_union_message(
     Returns a RecordFlux message representing a tagged union out of a mapping from
     field names to a tuple containing the tag and the type for each variant.
     """
-    fields = {Field(f): t for f, (_, t) in variants.items()}
-    links = flatten(
-        [
-            Link(INITIAL, Field(f), condition=t.matches(f)),
-            Link(INITIAL, FINAL, condition=Not(t.matches(f))),
-            Link(Field(f), FINAL),
-        ]
-        for f, (t, _) in variants.items()
-    )
+    fields = {Field("Tag"): ASN_TAG_TY} | {
+        Field(f): t for f, (_, t) in variants.items()
+    }
+    links = [
+        Link(INITIAL, Field("Tag")),
+        Link(Field("Tag"), FINAL),
+        *flatten(
+            [
+                Link(Field("Tag"), Field(f), condition=t.matches("Tag")),
+                Link(Field(f), FINAL),
+            ]
+            for f, (t, _) in variants.items()
+        ),
+    ]
     return model.UnprovenMessage(ident, links, fields).merged().proven()
 
 
