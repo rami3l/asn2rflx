@@ -286,9 +286,7 @@ def tagged_union_message(
         ),
         Link(Field("Tag"), FINAL, condition=And(*map(Not, matches.values()))),
     ]
-    from pydbg import dbg
-
-    return dbg(model.UnprovenMessage(ident, links, fields).merged()).proven()
+    return model.UnprovenMessage(ident, links, fields).merged().proven()
 
 
 HELPER_TYPES = [

@@ -1,4 +1,5 @@
 from pprint import pprint
+from typing import cast
 
 import asn1tools as asn1
 from asn2rflx import prelude
@@ -8,6 +9,7 @@ from rflx import model
 from rflx.identifier import ID
 from rflx.model.model import Model
 from rflx.pyrflx import PyRFLX
+from rflx.pyrflx.typevalue import MessageValue
 
 ASSETS = "assets/"
 
@@ -70,3 +72,9 @@ def test_rocket_decode(rocket: dict[ID, model.Type]) -> None:
     assert expected.get("Untagged_Value_range_Untagged_Value") == b"\x00\x80"
     assert expected.get("Untagged_Value_name_Untagged_Value") == b"AAAAAA"
     assert expected.get("Untagged_Value_ident_Untagged_Value") == b"\x2a\x03\x04"
+    assert [
+        i.bytestring
+        for i in cast(
+            list[MessageValue], expected.get("Untagged_Value_payload_many_Value")
+        )
+    ] == [bytes.fromhex(i) for i in ["020105", "020106", "020107"]]
