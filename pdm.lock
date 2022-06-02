@@ -91,6 +91,11 @@ requires_python = ">=3.6"
 summary = "A simple immutable dictionary"
 
 [[package]]
+name = "gprof2dot"
+version = "2021.2.21"
+summary = "Generate a dot graph from the output of several profilers."
+
+[[package]]
 name = "humanfriendly"
 version = "10.0"
 requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
@@ -244,6 +249,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pytest-profiling"
+version = "1.7.0"
+summary = "Profiling plugin for py.test"
+dependencies = [
+    "gprof2dot",
+    "pytest",
+    "six",
+]
+
+[[package]]
 name = "pytest-xdist"
 version = "2.5.0"
 requires_python = ">=3.6"
@@ -339,7 +354,7 @@ summary = "an efficient SMT solver library"
 
 [metadata]
 lock_version = "3.1"
-content_hash = "sha256:108f678c6397ef8bb2e6353e0b0f84a0c65dad8f508ce3fd2c0d25845022bac0"
+content_hash = "sha256:538cff764f48185f366cb3eaf0e1364373777c65b39401db43961b10275d236b"
 
 [metadata.files]
 "asn1tools 0.163.0" = [
@@ -423,6 +438,9 @@ content_hash = "sha256:108f678c6397ef8bb2e6353e0b0f84a0c65dad8f508ce3fd2c0d25845
     {file = "frozendict-2.3.2-cp39-cp39-win_amd64.whl", hash = "sha256:bde28db6b5868dd3c45b3555f9d1dc5a1cca6d93591502fa5dcecce0dde6a335"},
     {file = "frozendict-2.3.2-py3-none-any.whl", hash = "sha256:6882a9bbe08ab9b5ff96ce11bdff3fe40b114b9813bc6801261e2a7b45e20012"},
     {file = "frozendict-2.3.2.tar.gz", hash = "sha256:7fac4542f0a13fbe704db4942f41ba3abffec5af8b100025973e59dff6a09d0d"},
+]
+"gprof2dot 2021.2.21" = [
+    {file = "gprof2dot-2021.2.21.tar.gz", hash = "sha256:1223189383b53dcc8ecfd45787ac48c0ed7b4dbc16ee8b88695d053eea1acabf"},
 ]
 "humanfriendly 10.0" = [
     {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
@@ -584,6 +602,10 @@ content_hash = "sha256:108f678c6397ef8bb2e6353e0b0f84a0c65dad8f508ce3fd2c0d25845
 "pytest-forked 1.4.0" = [
     {file = "pytest_forked-1.4.0-py3-none-any.whl", hash = "sha256:bbbb6717efc886b9d64537b41fb1497cfaf3c9601276be8da2cccfea5a3c8ad8"},
     {file = "pytest-forked-1.4.0.tar.gz", hash = "sha256:8b67587c8f98cbbadfdd804539ed5455b6ed03802203485dd2f53c1422d7440e"},
+]
+"pytest-profiling 1.7.0" = [
+    {file = "pytest_profiling-1.7.0-py2.py3-none-any.whl", hash = "sha256:999cc9ac94f2e528e3f5d43465da277429984a1c237ae9818f8cfd0b06acb019"},
+    {file = "pytest-profiling-1.7.0.tar.gz", hash = "sha256:93938f147662225d2b8bd5af89587b979652426a8a6ffd7e73ec4a23e24b7f29"},
 ]
 "pytest-xdist 2.5.0" = [
     {file = "pytest_xdist-2.5.0-py3-none-any.whl", hash = "sha256:6fe5c74fec98906deb8f2d2b616b5c782022744978e7bd4695d39c8f42d0ce65"},

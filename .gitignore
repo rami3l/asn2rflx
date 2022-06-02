@@ -160,3 +160,6 @@ cython_debug/
 
 # Dotenv
 .env
+
+# Profiling
+prof/
