@@ -9,7 +9,7 @@ from rflx import model
 from rflx.identifier import ID
 
 from asn2rflx import prelude
-from asn2rflx.utils import strid
+from asn2rflx.utils import from_asn1_name, strid
 
 
 @dataclass
@@ -64,8 +64,13 @@ class AsnTypeConverter:
         fields = cast(list[ber.Type], message.root_members)
         return prelude.SequenceBerType(
             strid(list(filter(None, [self.base_path, relpath]))),
-            message.name,
-            frozendict({field.name: self.convert(field, relpath) for field in fields}),
+            from_asn1_name(message.name),
+            frozendict(
+                {
+                    from_asn1_name(field.name): self.convert(field, relpath)
+                    for field in fields
+                }
+            ),
         )
 
     @convert.register  # type: ignore [no-redef]
@@ -80,8 +85,13 @@ class AsnTypeConverter:
         fields = cast(list[ber.Type], message.members)
         return prelude.ChoiceBerType(
             strid(list(filter(None, [self.base_path, relpath]))),
-            message.name,
-            frozendict({field.name: self.convert(field, relpath) for field in fields}),
+            from_asn1_name(message.name),
+            frozendict(
+                {
+                    from_asn1_name(field.name): self.convert(field, relpath)
+                    for field in fields
+                }
+            ),
         )
 
     def convert_spec(self, spec: asn1.compiler.Specification) -> dict[ID, model.Type]:
@@ -92,7 +102,9 @@ class AsnTypeConverter:
         res: dict[ID, model.Type] = {}
         for path, tys in spec.modules.items():
             res |= {
-                (ty1 := self.convert(ty.type, path).tlv_ty()).qualified_identifier: ty1
+                (
+                    ty1 := self.convert(ty.type, from_asn1_name(path)).tlv_ty()
+                ).qualified_identifier: ty1
                 for ty in tys.values()
             }
         return res

@@ -277,18 +277,18 @@ def tagged_union_message(
     fields = {Field("Tag"): ASN_TAG_TY} | {
         Field(f): t for f, (_, t) in variants.items()
     }
+    matches = {Field(f): t.matches("Tag") for f, (t, _) in variants.items()}
     links = [
         Link(INITIAL, Field("Tag")),
-        Link(Field("Tag"), FINAL),
         *flatten(
-            [
-                Link(Field("Tag"), Field(f), condition=t.matches("Tag")),
-                Link(Field(f), FINAL),
-            ]
-            for f, (t, _) in variants.items()
+            [Link(Field("Tag"), f, condition=m), Link(f, FINAL)]
+            for f, m in matches.items()
         ),
+        Link(Field("Tag"), FINAL, condition=And(*map(Not, matches.values()))),
     ]
-    return model.UnprovenMessage(ident, links, fields).merged().proven()
+    from pydbg import dbg
+
+    return dbg(model.UnprovenMessage(ident, links, fields).merged()).proven()
 
 
 HELPER_TYPES = [

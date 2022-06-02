@@ -49,7 +49,7 @@ def test_rocket_decode(rocket: dict[ID, model.Type]) -> None:
     types = rocket.values()
     pprint({str(ty) for ty in types})
     model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
-    pkg = model.package("World-Schema")
+    pkg = model.package("World_Schema")
 
     (expected := pkg.new_message("Rocket")).parse(
         bytes.fromhex(
@@ -57,7 +57,7 @@ def test_rocket_decode(rocket: dict[ID, model.Type]) -> None:
             "0202"  # INTEGER
             "0080"  # 128
             "0406"  # OCTET STRING
-            "414141"  # "AAAAAA"
+            "414141414141"  # "AAAAAA"
             "0603"  # OBJECT IDENTIFIER
             "2A0304"  # "1.2.3.4"
             "3009"  # SEQUENCE OF
