@@ -1,0 +1,17 @@
+Tagged-Test DEFINITIONS ::= BEGIN
+  Tagged ::= SEQUENCE {
+     name      OCTET STRING,
+     app       CHOICE { 
+        imp    [APPLICATION 0] IMPLICIT INTEGER,
+        imc    [APPLICATION 1] IMPLICIT SEQUENCE OF INTEGER,
+        exp    [APPLICATION 2] INTEGER,
+        exc    [APPLICATION 3] SEQUENCE OF INTEGER
+     },
+     ctx       CHOICE {
+        imp    [4] IMPLICIT INTEGER,
+        imc    [5] IMPLICIT SEQUENCE OF INTEGER,
+        exp    [6] INTEGER,
+        exc    [7] SEQUENCE OF INTEGER
+     }
+  }
+END

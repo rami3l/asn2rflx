@@ -5,11 +5,11 @@ BEGIN
   {
      range     INTEGER,
      name      OCTET STRING,
-     ident     OBJECT IDENTIFIER, 
+     ident     OBJECT IDENTIFIER,
      payload   CHOICE
      { 
         one    INTEGER,  
         many   SEQUENCE OF INTEGER  
      }
-  }                                                     
+  }
 END
