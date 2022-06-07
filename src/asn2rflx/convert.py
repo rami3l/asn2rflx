@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import singledispatchmethod
-from typing import Callable, cast
+from typing import cast
 
 import asn1tools as asn1
 from asn1tools.codecs import ber

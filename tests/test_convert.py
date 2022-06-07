@@ -2,6 +2,7 @@ from pprint import pprint
 from typing import cast
 
 import asn1tools as asn1
+from asn1tools.compiler import Specification
 from asn2rflx import prelude
 from asn2rflx.convert import AsnTypeConverter
 from pytest import fixture
@@ -20,10 +21,13 @@ def foo() -> dict[ID, model.Type]:
 
 
 @fixture(scope="session")
-def rocket() -> dict[ID, model.Type]:
-    return AsnTypeConverter().convert_spec(
-        asn1.compile_files(ASSETS + "rocket_mod.asn")
-    )
+def rocket_spec() -> Specification:
+    return asn1.compile_files(ASSETS + "rocket_mod.asn")
+
+
+@fixture(scope="session")
+def rocket(rocket_spec: Specification) -> dict[ID, model.Type]:
+    return AsnTypeConverter().convert_spec(rocket_spec)
 
 
 def test_foo_decode(foo: dict[ID, model.Type]) -> None:
@@ -47,25 +51,23 @@ def test_foo_decode(foo: dict[ID, model.Type]) -> None:
     assert expected.get("Untagged_Value_question_Untagged_Value") == b"Anybody there?"
 
 
-def test_rocket_decode(rocket: dict[ID, model.Type]) -> None:
+def test_rocket_decode(
+    rocket_spec: Specification, rocket: dict[ID, model.Type]
+) -> None:
     types = rocket.values()
     pprint({str(ty) for ty in types})
     model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
     pkg = model.package("World_Schema")
 
     (expected := pkg.new_message("Rocket")).parse(
-        bytes.fromhex(
-            "301C"  # SEQUENCE
-            "0202"  # INTEGER
-            "0080"  # 128
-            "0406"  # OCTET STRING
-            "414141414141"  # "AAAAAA"
-            "0603"  # OBJECT IDENTIFIER
-            "2A0304"  # "1.2.3.4"
-            "3009"  # SEQUENCE OF
-            "020105"  # INTEGER : 5
-            "020106"  # INTEGER : 6
-            "020107"  # INTEGER : 7
+        rocket_spec.encode(
+            "Rocket",
+            {
+                "range": 128,
+                "name": b"AAAAAA",
+                "ident": "1.2.3.4",
+                "payload": ("many", [5, 6, 7]),
+            },
         )
     )
 
