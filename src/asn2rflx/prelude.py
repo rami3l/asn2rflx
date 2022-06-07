@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum, unique
 from functools import lru_cache, reduce
-from typing import Mapping, Protocol, cast
+from typing import Mapping, Optional, Protocol, cast
 
 from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
@@ -25,9 +25,13 @@ class AsnTagForm:
 
 @dataclass(frozen=True)
 class AsnTag:
+    num: int = AsnTagNum.END_OF_CONTENTS
     class_: int = AsnTagClass.UNIVERSAL
     form: int = AsnTagForm.PRIMITIVE
-    num: int = AsnTagNum.END_OF_CONTENTS
+
+    LONG_TAG_UNSUPPORTED_ERROR = NotImplementedError(
+        "Long ASN.1 Tags are not supported for the moment"
+    )
 
     @classmethod
     @lru_cache(16)
@@ -50,6 +54,22 @@ class AsnTag:
             for k, v in kvs.items()
         )
         return reduce(And, eqs)
+
+    @property
+    def as_bytearray(self) -> bytearray:
+        byte: int = (self.class_ << 1 | self.form) << 5 | self.num
+        return bytearray([byte])
+
+    @classmethod
+    def from_bytearray(cls, arr: bytearray) -> "AsnTag":
+        if len(arr) != 1:
+            raise cls.LONG_TAG_UNSUPPORTED_ERROR
+        byte: int = arr[0]
+        return AsnTag(
+            num=byte & ((1 << 5) - 1),
+            form=byte >> 5 & 1,
+            class_=byte >> 6,
+        )
 
 
 @unique
@@ -78,14 +98,14 @@ class BerType(Protocol):
     def tag(self) -> AsnTag:
         raise NotImplementedError
 
-    @lru_cache(16)
+    @lru_cache(1)
     def v_ty(self) -> model.Type:
         """The `RAW` RecordFlux representation of this type."""
         return OPAQUE
 
     @lru_cache(16)
     def lv_ty(self) -> model.Type:
-        """The `UNTAGGED`, length-value (LV) encoding of this type."""
+        """The `Untagged`, length-value (LV) encoding of this type."""
         f = Field
         links = [
             # TODO: Add support for long length 0x81
@@ -94,7 +114,7 @@ class BerType(Protocol):
             Link(f("Value"), FINAL),
         ]
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
-        full_ident = strid(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
+        full_ident = strid(list(filter(None, [self.path, "Untagged_" + self.ident])))
         return model.UnprovenMessage(full_ident, links, fields).merged().proven()
 
     @lru_cache(16)
@@ -117,6 +137,31 @@ class BerType(Protocol):
             )
         except NotImplementedError:
             return self.v_ty()
+
+    @lru_cache(16)
+    def implicitly_tagged(
+        self, tag: AsnTag, path: Optional[str]
+    ) -> "ImplicitlyTaggedBerType":
+        """
+        The `IMPLICIT` variant of this type.
+        Its tag-length-value (TLV) encoding is equivalent to
+        its regular TLV encoding with a custom tag override.
+        """
+        tag1 = AsnTag(num=tag.num, form=tag.form, class_=self.tag.class_)
+        return ImplicitlyTaggedBerType(base=self, tag=tag1, path=path or self.path)
+
+    @lru_cache(16)
+    def explicitly_tagged(self, tag: AsnTag, path: str) -> "ImplicitlyTaggedBerType":
+        """
+        The `EXPLICIT` tag-length-value (TLV) encoding of this type.
+        It is equivalent to its regular TLV encoding nested in an implicitly-tagged,
+        single-field `SEQUENCE` type.
+        """
+        return SequenceBerType(
+            path,
+            "Explicit_" + self.ident,
+            {"Inner": self},
+        ).implicitly_tagged(tag, path)
 
 
 @dataclass(frozen=True)
@@ -152,7 +197,7 @@ class DefiniteBerType(SimpleBerType):
 
     @lru_cache(16)
     def lv_ty(self) -> model.Type:
-        """The `UNTAGGED`, length-value (LV) encoding of this type."""
+        """The `Untagged`, length-value (LV) encoding of this type."""
         f = Field
         v_ty = self.v_ty()
         links = [Link(INITIAL, f("Length"))]
@@ -171,7 +216,7 @@ class DefiniteBerType(SimpleBerType):
                 Link(f("Value"), FINAL),
             ]
             fields[f("Value")] = v_ty
-        full_ident = strid(list(filter(None, [self.path, "UNTAGGED_" + self.ident])))
+        full_ident = strid(list(filter(None, [self.path, "Untagged_" + self.ident])))
         return model.Message(full_ident, links, fields)
 
 
@@ -255,6 +300,30 @@ class ChoiceBerType(BerType):
             raise ValueError(
                 "cannot construct CHOICE from untagged or invalid BerType"
             ) from e
+
+
+@dataclass(frozen=True)
+class ImplicitlyTaggedBerType(BerType):
+    base: BerType
+    tag: AsnTag
+    path: str
+
+    @property
+    def ident(self) -> str:
+        prefix = "Univ"
+        if self.tag.class_ == AsnTagClass.APPLICATION:
+            prefix = "Appl"
+        elif self.tag.class_ == AsnTagClass.CONTEXT_SPECIFIC:
+            prefix = "Ctxt"
+        elif self.tag.class_ == AsnTagClass.PRIVATE:
+            prefix = "Priv"
+        return f"{prefix}{self.tag.num:02}_{self.base.ident}"
+
+    def v_ty(self) -> model.Type:  # type: ignore [override]
+        return self.base.v_ty()
+
+    def lv_ty(self) -> model.Type:  # type: ignore [override]
+        return self.base.lv_ty()
 
 
 def simple_message(ident: str, fields: dict[str, model.Type]) -> model.Message:
