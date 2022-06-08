@@ -23,8 +23,8 @@ class AsnTypeConverter:
 
     # In Python 3.10+ this should be done with the `match-case` construct...
     @singledispatchmethod
-    def convert(self, _, relpath: str = "") -> prelude.BerType:
-        raise NotImplementedError
+    def convert(self, val, relpath: str = "") -> prelude.BerType:
+        raise NotImplementedError(f"conversion not implemented for {val}")
 
     def __convert_implicit(
         self, base: prelude.BerType, val: ber.Type, relpath: str = ""
@@ -111,6 +111,13 @@ class AsnTypeConverter:
             ),
         )
         return self.__convert_implicit(res, message, relpath)
+
+    @convert.register  # type: ignore [no-redef]
+    def _(self, tagged: ber.ExplicitTag, relpath: str = "") -> prelude.BerType:
+        tag = prelude.AsnTag.from_bytearray(tagged.tag)
+        return self.convert(cast(ber.Type, tagged.inner), relpath).explicitly_tagged(
+            tag, self.path(relpath)
+        )
 
     def convert_spec(self, spec: asn1.compiler.Specification) -> dict[ID, model.Type]:
         """

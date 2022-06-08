@@ -1,16 +1,13 @@
-from pprint import pprint
+import random
 from typing import Union, cast
 
 import asn1tools as asn1
 import hypothesis as hypot
 import hypothesis.strategies as strats
+import pytest
 from asn1tools.codecs.ber import encode_signed_integer
-from asn1tools.compiler import Specification
 from asn2rflx import prelude
 from asn2rflx.convert import AsnTypeConverter
-from pytest import fixture
-from rflx import model
-from rflx.identifier import ID
 from rflx.model.model import Model
 from rflx.pyrflx import PyRFLX
 from rflx.pyrflx.typevalue import MessageValue
@@ -28,29 +25,21 @@ ASN_SHORT_IA5STRINGS = strats.text(
 )
 ASN_SHORT_OCTET_STRINGS = strats.text(max_size=ASN_SHORT_LEN)
 
-ASN_INT_DECODE_CONFIG = {"byteorder": "big", "signed": True}
-
-
-@fixture(scope="session")
-def foo_spec() -> Specification:
-    return asn1.compile_files(ASSETS + "foo.asn")
-
-
-@fixture(scope="session")
-def foo(foo_spec: Specification) -> dict[ID, model.Type]:
-    return AsnTypeConverter().convert_spec(foo_spec)
-
 
 # TODO: Support long lengths here.
 @hypot.given(id=ASN_SHORT_INTS, question=ASN_SHORT_IA5STRINGS)
+@hypot.example(id=0, question="")
+@hypot.settings(deadline=2 * 60000)
+@pytest.mark.xdist_group(name="foo")
 def test_foo_decode(
-    foo_spec: Specification,
-    foo: dict[ID, model.Type],
     id: int,
     question: str,
 ) -> None:
+    foo_spec = asn1.compile_files(ASSETS + "foo.asn")
+    foo = AsnTypeConverter().convert_spec(foo_spec)
+
     types = foo.values()
-    pprint({str(ty) for ty in types})
+    # pprint({str(ty) for ty in types})
     model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
     pkg = model.package("Foo")
 
@@ -67,16 +56,6 @@ def test_foo_decode(
     assert expected.get("Untagged_Value_question_Untagged_Value") == question.encode()
 
 
-@fixture(scope="session")
-def rocket_spec() -> Specification:
-    return asn1.compile_files(ASSETS + "rocket_mod.asn")
-
-
-@fixture(scope="session")
-def rocket(rocket_spec: Specification) -> dict[ID, model.Type]:
-    return AsnTypeConverter().convert_spec(rocket_spec)
-
-
 @hypot.given(
     range=ASN_SHORT_INTS,
     name=ASN_SHORT_OCTET_STRINGS,
@@ -85,16 +64,19 @@ def rocket(rocket_spec: Specification) -> dict[ID, model.Type]:
         strats.lists(ASN_SHORT_INTS, max_size=3),
     ),
 )
-@hypot.settings(deadline=1000)
+@hypot.example(range=0, name="", payload=0)
+@hypot.settings(deadline=4 * 60000)
+@pytest.mark.xdist_group(name="rocket")
 def test_rocket_decode(
-    rocket_spec: Specification,
-    rocket: dict[ID, model.Type],
     range: int,
     name: str,
     payload: Union[int, list[int]],
 ) -> None:
+    rocket_spec = asn1.compile_files(ASSETS + "rocket_mod.asn")
+    rocket = AsnTypeConverter().convert_spec(rocket_spec)
+
     types = rocket.values()
-    pprint({str(ty) for ty in types})
+    # pprint({str(ty) for ty in types})
     model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
     pkg = model.package("World_Schema")
 
@@ -117,6 +99,47 @@ def test_rocket_decode(
     got_payload = expected.get(
         f"Untagged_Value_payload_{'one' if is_one else 'many'}_Value"
     )
+    if is_one:
+        assert got_payload == encode_signed_integer(payload)
+    else:
+        assert [i.bytestring[2:] for i in cast(list[MessageValue], got_payload)] == [
+            encode_signed_integer(i) for i in cast(list[int], payload)
+        ]
+
+
+@hypot.given(
+    name=ASN_SHORT_OCTET_STRINGS,
+    variant=strats.from_regex("[ac][ie]", fullmatch=True),
+    payload=strats.one_of(
+        ASN_SHORT_INTS,
+        strats.lists(ASN_SHORT_INTS, max_size=4),
+    ),
+)
+@pytest.mark.xdist_group(name="tagged")
+def test_tagged_decode(
+    name: str,
+    variant: str,
+    payload: Union[int, list[int]],
+) -> None:
+    tagged_spec = asn1.compile_files(ASSETS + "tagged.asn")
+    tagged = AsnTypeConverter().convert_spec(tagged_spec)
+
+    types = tagged.values()
+    # pprint({str(ty) for ty in types})
+    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
+    pkg = model.package("Tagged_Test")
+
+    name1 = name.encode()
+    is_one = isinstance(payload, int)
+    choice = variant + ("p" if is_one else "c")
+    payload1 = (choice, payload)
+    (expected := pkg.new_message("Tagged")).parse(
+        tagged_spec.encode("Tagged", {"name": name1, "payload": payload1})
+    )
+
+    assert expected.get("Untagged_Value_name_Untagged_Value") == name1
+
+    got_payload = expected.get(f"Untagged_Value_payload_{choice}_Value")
     if is_one:
         assert got_payload == encode_signed_integer(payload)
     else:
