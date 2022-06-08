@@ -28,7 +28,9 @@ dev = [
     "pydbg>=0.3.0",
     "mypy>=0.942",
     "pytest-xdist[psutil]>=2.5.0",
-    "pytest-profiling>=1.7.0"]
+    "pytest-profiling>=1.7.0",
+    "hypothesis>=6.47.0",
+]
 
 [tool.pdm.scripts]
 main = "python -m asn2rflx"
