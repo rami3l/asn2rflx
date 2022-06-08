@@ -4,6 +4,7 @@ from typing import cast
 import asn1tools as asn1
 import hypothesis as hypot
 import hypothesis.strategies as strats
+from asn1tools.codecs.ber import encode_signed_integer
 from asn1tools.compiler import Specification
 from asn2rflx import prelude
 from asn2rflx.convert import AsnTypeConverter
@@ -40,16 +41,6 @@ def foo(foo_spec: Specification) -> dict[ID, model.Type]:
     return AsnTypeConverter().convert_spec(foo_spec)
 
 
-@fixture(scope="session")
-def rocket_spec() -> Specification:
-    return asn1.compile_files(ASSETS + "rocket_mod.asn")
-
-
-@fixture(scope="session")
-def rocket(rocket_spec: Specification) -> dict[ID, model.Type]:
-    return AsnTypeConverter().convert_spec(rocket_spec)
-
-
 # TODO: Support long lengths here.
 @hypot.given(id=ASN_SHORT_INTS, question=ASN_SHORT_IA5STRINGS)
 def test_foo_decode(
@@ -71,24 +62,33 @@ def test_foo_decode(
     assert expected.get("Tag_Form") == 1
     assert expected.get("Tag_Num") == 16
 
-    assert (
-        int.from_bytes(
-            cast(bytes, expected.get("Untagged_Value_id_Untagged_Value")),
-            **ASN_INT_DECODE_CONFIG,  # type: ignore
-        )
-        == id
-    )
+    assert expected.get("Untagged_Value_id_Untagged_Value") == encode_signed_integer(id)
 
     assert expected.get("Untagged_Value_question_Untagged_Value") == question.encode()
 
 
-@hypot.given(range=ASN_SHORT_INTS, name=ASN_SHORT_OCTET_STRINGS)
+@fixture(scope="session")
+def rocket_spec() -> Specification:
+    return asn1.compile_files(ASSETS + "rocket_mod.asn")
+
+
+@fixture(scope="session")
+def rocket(rocket_spec: Specification) -> dict[ID, model.Type]:
+    return AsnTypeConverter().convert_spec(rocket_spec)
+
+
+@hypot.given(
+    range=ASN_SHORT_INTS,
+    name=ASN_SHORT_OCTET_STRINGS,
+    payload=strats.lists(ASN_SHORT_INTS, max_size=3),
+)
 @hypot.settings(deadline=1000)
 def test_rocket_decode(
     rocket_spec: Specification,
     rocket: dict[ID, model.Type],
     range: int,
     name: str,
+    payload: list[int],
 ) -> None:
     types = rocket.values()
     pprint({str(ty) for ty in types})
@@ -103,23 +103,19 @@ def test_rocket_decode(
                 "range": range,
                 "name": name1,
                 "ident": "1.2.3.4",
-                "payload": ("many", [5, 6, 7]),
+                "payload": ("many", payload),
             },
         )
     )
 
-    assert (
-        int.from_bytes(
-            cast(bytes, expected.get("Untagged_Value_range_Untagged_Value")),
-            **ASN_INT_DECODE_CONFIG,  # type: ignore
-        )
-        == range
+    assert expected.get("Untagged_Value_range_Untagged_Value") == encode_signed_integer(
+        range
     )
     assert expected.get("Untagged_Value_name_Untagged_Value") == name1
     assert expected.get("Untagged_Value_ident_Untagged_Value") == b"\x2a\x03\x04"
-    assert [
-        i.bytestring
-        for i in cast(
-            list[MessageValue], expected.get("Untagged_Value_payload_many_Value")
-        )
-    ] == [bytes.fromhex(i) for i in ["020105", "020106", "020107"]]
+
+    got_payload = expected.get("Untagged_Value_payload_many_Value")
+    if isinstance(got_payload, list):
+        assert [cast(MessageValue, i).bytestring[2:] for i in got_payload] == [
+            encode_signed_integer(i) for i in payload
+        ]
