@@ -2,6 +2,8 @@ from pprint import pprint
 from typing import cast
 
 import asn1tools as asn1
+import hypothesis as hypot
+import hypothesis.strategies as strats
 from asn1tools.compiler import Specification
 from asn2rflx import prelude
 from asn2rflx.convert import AsnTypeConverter
@@ -14,10 +16,28 @@ from rflx.pyrflx.typevalue import MessageValue
 
 ASSETS = "assets/"
 
+ASN_SHORT_LEN = 10
+ASN_SHORT_INTS = strats.integers(
+    min_value=-(256 ** (ASN_SHORT_LEN - 1)),
+    max_value=256 ** (ASN_SHORT_LEN - 1) - 1,
+)
+ASN_SHORT_IA5STRINGS = strats.text(
+    alphabet=strats.characters(max_codepoint=127),
+    max_size=ASN_SHORT_LEN,
+)
+ASN_SHORT_OCTET_STRINGS = strats.text(max_size=ASN_SHORT_LEN)
+
+ASN_INT_DECODE_CONFIG = {"byteorder": "big", "signed": True}
+
 
 @fixture(scope="session")
-def foo() -> dict[ID, model.Type]:
-    return AsnTypeConverter().convert_spec(asn1.compile_files(ASSETS + "foo.asn"))
+def foo_spec() -> Specification:
+    return asn1.compile_files(ASSETS + "foo.asn")
+
+
+@fixture(scope="session")
+def foo(foo_spec: Specification) -> dict[ID, model.Type]:
+    return AsnTypeConverter().convert_spec(foo_spec)
 
 
 @fixture(scope="session")
@@ -30,49 +50,72 @@ def rocket(rocket_spec: Specification) -> dict[ID, model.Type]:
     return AsnTypeConverter().convert_spec(rocket_spec)
 
 
-def test_foo_decode(foo: dict[ID, model.Type]) -> None:
+# TODO: Support long lengths here.
+@hypot.given(id=ASN_SHORT_INTS, question=ASN_SHORT_IA5STRINGS)
+def test_foo_decode(
+    foo_spec: Specification,
+    foo: dict[ID, model.Type],
+    id: int,
+    question: str,
+) -> None:
     types = foo.values()
     pprint({str(ty) for ty in types})
     model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
     pkg = model.package("Foo")
 
     (expected := pkg.new_message("Question")).parse(
-        b"\x30\x13"  # SEQUENCE
-        b"\x02\x01"  # INTEGER
-        b"\x05"  # 5
-        b"\x16\x0e"  # IA5String
-        b"Anybody there?"
+        foo_spec.encode("Question", {"id": id, "question": question})
     )
 
     assert expected.get("Tag_Class") == 0
     assert expected.get("Tag_Form") == 1
     assert expected.get("Tag_Num") == 16
-    assert expected.get("Untagged_Value_id_Untagged_Value") == b"\x05"
-    assert expected.get("Untagged_Value_question_Untagged_Value") == b"Anybody there?"
+
+    assert (
+        int.from_bytes(
+            cast(bytes, expected.get("Untagged_Value_id_Untagged_Value")),
+            **ASN_INT_DECODE_CONFIG,  # type: ignore
+        )
+        == id
+    )
+
+    assert expected.get("Untagged_Value_question_Untagged_Value") == question.encode()
 
 
+@hypot.given(range=ASN_SHORT_INTS, name=ASN_SHORT_OCTET_STRINGS)
+@hypot.settings(deadline=1000)
 def test_rocket_decode(
-    rocket_spec: Specification, rocket: dict[ID, model.Type]
+    rocket_spec: Specification,
+    rocket: dict[ID, model.Type],
+    range: int,
+    name: str,
 ) -> None:
     types = rocket.values()
     pprint({str(ty) for ty in types})
     model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
     pkg = model.package("World_Schema")
 
+    name1 = name.encode()
     (expected := pkg.new_message("Rocket")).parse(
         rocket_spec.encode(
             "Rocket",
             {
-                "range": 128,
-                "name": b"AAAAAA",
+                "range": range,
+                "name": name1,
                 "ident": "1.2.3.4",
                 "payload": ("many", [5, 6, 7]),
             },
         )
     )
 
-    assert expected.get("Untagged_Value_range_Untagged_Value") == b"\x00\x80"
-    assert expected.get("Untagged_Value_name_Untagged_Value") == b"AAAAAA"
+    assert (
+        int.from_bytes(
+            cast(bytes, expected.get("Untagged_Value_range_Untagged_Value")),
+            **ASN_INT_DECODE_CONFIG,  # type: ignore
+        )
+        == range
+    )
+    assert expected.get("Untagged_Value_name_Untagged_Value") == name1
     assert expected.get("Untagged_Value_ident_Untagged_Value") == b"\x2a\x03\x04"
     assert [
         i.bytestring
