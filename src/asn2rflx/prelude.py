@@ -5,6 +5,7 @@ from typing import Mapping, Optional, Protocol, cast
 
 from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
+from frozendict import frozendict
 from more_itertools import windowed
 from more_itertools.recipes import flatten
 from rflx import model
@@ -147,8 +148,11 @@ class BerType(Protocol):
         Its tag-length-value (TLV) encoding is equivalent to
         its regular TLV encoding with a custom tag override.
         """
-        tag1 = AsnTag(num=tag.num, form=tag.form, class_=self.tag.class_)
-        return ImplicitlyTaggedBerType(base=self, tag=tag1, path=path or self.path)
+        return ImplicitlyTaggedBerType(
+            self,
+            AsnTag(num=tag.num, form=tag.form, class_=self.tag.class_),
+            path or self.path,
+        )
 
     @lru_cache(16)
     def explicitly_tagged(self, tag: AsnTag, path: str) -> "ImplicitlyTaggedBerType":
@@ -160,7 +164,7 @@ class BerType(Protocol):
         return SequenceBerType(
             path,
             "Explicit_" + self.ident,
-            {"Inner": self},
+            frozendict({"Inner": self}),
         ).implicitly_tagged(tag, path)
 
 
@@ -305,8 +309,18 @@ class ChoiceBerType(BerType):
 @dataclass(frozen=True)
 class ImplicitlyTaggedBerType(BerType):
     base: BerType
-    tag: AsnTag
-    path: str
+
+    _tag: AsnTag
+
+    @property
+    def tag(self) -> AsnTag:
+        return self._tag
+
+    _path: str
+
+    @property
+    def path(self) -> str:
+        return self._path
 
     @property
     def ident(self) -> str:

@@ -1,11 +1,12 @@
 import logging
 from pathlib import Path
 
+import asn1tools as asn1
 import coloredlogs
-from more_itertools import flatten
 from rflx.model.model import Model
 
-from .prelude import MODEL, OCTET_STRING, SequenceOfBerType
+from asn2rflx import prelude
+from asn2rflx.convert import AsnTypeConverter
 
 
 def greeting() -> str:
@@ -19,11 +20,13 @@ def main() -> None:
     outpath = Path("./build/rflx/specs/")
     logging.info(f"Writing specs to `{outpath.absolute()}`...")
     outpath.mkdir(parents=True, exist_ok=True)
-    sequence_of_types = [SequenceOfBerType("Test", OCTET_STRING.tlv_ty())]
+
     model = Model(
         types=[
-            *MODEL.types[:],
-            *flatten([ty.v_ty(), ty.lv_ty(), ty.tlv_ty()] for ty in sequence_of_types),
+            *prelude.MODEL.types,
+            *AsnTypeConverter()
+            .convert_spec(asn1.compile_files("assets/tagged.asn"))
+            .values(),
         ]
     )
     model.write_specification_files(outpath)
