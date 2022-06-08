@@ -1,5 +1,5 @@
 from pprint import pprint
-from typing import cast
+from typing import Union, cast
 
 import asn1tools as asn1
 import hypothesis as hypot
@@ -80,7 +80,10 @@ def rocket(rocket_spec: Specification) -> dict[ID, model.Type]:
 @hypot.given(
     range=ASN_SHORT_INTS,
     name=ASN_SHORT_OCTET_STRINGS,
-    payload=strats.lists(ASN_SHORT_INTS, max_size=3),
+    payload=strats.one_of(
+        ASN_SHORT_INTS,
+        strats.lists(ASN_SHORT_INTS, max_size=3),
+    ),
 )
 @hypot.settings(deadline=1000)
 def test_rocket_decode(
@@ -88,7 +91,7 @@ def test_rocket_decode(
     rocket: dict[ID, model.Type],
     range: int,
     name: str,
-    payload: list[int],
+    payload: Union[int, list[int]],
 ) -> None:
     types = rocket.values()
     pprint({str(ty) for ty in types})
@@ -96,15 +99,12 @@ def test_rocket_decode(
     pkg = model.package("World_Schema")
 
     name1 = name.encode()
+    is_one = isinstance(payload, int)
+    payload1 = ("one", payload) if is_one else ("many", payload)
     (expected := pkg.new_message("Rocket")).parse(
         rocket_spec.encode(
             "Rocket",
-            {
-                "range": range,
-                "name": name1,
-                "ident": "1.2.3.4",
-                "payload": ("many", payload),
-            },
+            {"range": range, "name": name1, "ident": "1.2.3.4", "payload": payload1},
         )
     )
 
@@ -114,8 +114,12 @@ def test_rocket_decode(
     assert expected.get("Untagged_Value_name_Untagged_Value") == name1
     assert expected.get("Untagged_Value_ident_Untagged_Value") == b"\x2a\x03\x04"
 
-    got_payload = expected.get("Untagged_Value_payload_many_Value")
-    if isinstance(got_payload, list):
-        assert [cast(MessageValue, i).bytestring[2:] for i in got_payload] == [
-            encode_signed_integer(i) for i in payload
+    got_payload = expected.get(
+        f"Untagged_Value_payload_{'one' if is_one else 'many'}_Value"
+    )
+    if is_one:
+        assert got_payload == encode_signed_integer(payload)
+    else:
+        assert [i.bytestring[2:] for i in cast(list[MessageValue], got_payload)] == [
+            encode_signed_integer(i) for i in cast(list[int], payload)
         ]
