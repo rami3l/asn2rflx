@@ -139,10 +139,13 @@ def test_tagged_decode(
 
     assert expected.get("Untagged_Value_name_Untagged_Value") == name1
 
-    got_payload = expected.get(f"Untagged_Value_payload_{choice}_Value")
+    payload_field = f"Untagged_Value_payload_{choice}_Value"
+    if variant.endswith("e"):  # Explicit tagging
+        payload_field += "_Inner_Untagged_Value"
     if is_one:
-        assert got_payload == encode_signed_integer(payload)
+        assert expected.get(payload_field) == encode_signed_integer(payload)
     else:
-        assert [i.bytestring[2:] for i in cast(list[MessageValue], got_payload)] == [
-            encode_signed_integer(i) for i in cast(list[int], payload)
-        ]
+        assert [
+            i.bytestring[2:]
+            for i in cast(list[MessageValue], expected.get(payload_field))
+        ] == [encode_signed_integer(i) for i in cast(list[int], payload)]
