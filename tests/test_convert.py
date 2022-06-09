@@ -1,4 +1,3 @@
-import random
 from typing import Union, cast
 
 import asn1tools as asn1
@@ -65,6 +64,7 @@ def test_foo_decode(
     ),
 )
 @hypot.example(range=0, name="", payload=0)
+@hypot.example(range=0, name="", payload=[])
 @hypot.settings(deadline=4 * 60000)
 @pytest.mark.xdist_group(name="rocket")
 def test_rocket_decode(
@@ -115,6 +115,11 @@ def test_rocket_decode(
         strats.lists(ASN_SHORT_INTS, max_size=4),
     ),
 )
+@hypot.example(name="", variant="ai", payload=[])
+@hypot.example(name="", variant="ae", payload=[])
+@hypot.example(name="", variant="ci", payload=[])
+@hypot.example(name="", variant="ce", payload=[])
+@hypot.settings(deadline=4 * 60000)
 @pytest.mark.xdist_group(name="tagged")
 def test_tagged_decode(
     name: str,
