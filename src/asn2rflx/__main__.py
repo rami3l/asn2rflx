@@ -21,12 +21,16 @@ def main() -> None:
     logging.info(f"Writing specs to `{outpath.absolute()}`...")
     outpath.mkdir(parents=True, exist_ok=True)
 
+    spec = asn1.compile_files(
+        [
+            "assets/rfc1155.asn",
+            "assets/rfc1157.asn",
+        ]
+    )
     model = Model(
         types=[
             *prelude.MODEL.types,
-            *AsnTypeConverter()
-            .convert_spec(asn1.compile_files("assets/tagged.asn"))
-            .values(),
+            *AsnTypeConverter().convert_spec(spec).values(),
         ]
     )
     model.write_specification_files(outpath)

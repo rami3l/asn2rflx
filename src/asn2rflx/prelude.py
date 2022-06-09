@@ -97,7 +97,9 @@ class BerType(Protocol):
 
     @property
     def tag(self) -> AsnTag:
-        raise NotImplementedError
+        raise NotImplementedError(
+            f"no tag definition found for type `{type(self)}`: got {self}"
+        )
 
     @lru_cache(1)
     def v_ty(self) -> model.Type:
@@ -343,7 +345,7 @@ class ImplicitlyTaggedBerType(BerType):
 def simple_message(ident: str, fields: dict[str, model.Type]) -> model.Message:
     """
     Returns a simple RecordFlux message (record/struct) out of a mapping from field
-    names to their repective types.
+    names to their respective types.
     """
     fields_ = {Field(f): t for f, t in fields.items()}
     links = [Link(*pair) for pair in windowed([INITIAL, *fields_.keys(), FINAL], 2)]
