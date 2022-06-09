@@ -150,7 +150,7 @@ class BerType(Protocol):
         """
         return ImplicitlyTaggedBerType(
             self,
-            AsnTag(num=tag.num, form=tag.form, class_=self.tag.class_),
+            AsnTag(num=tag.num, class_=tag.class_, form=self.tag.form),
             path or self.path,
         )
 
