@@ -14,6 +14,7 @@ from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
 
+from asn2rflx.error import Asn2RflxError
 from asn2rflx.utils import strid
 
 PRELUDE_NAME: str = "Prelude"
@@ -118,28 +119,33 @@ class BerType(Protocol):
         ]
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
         full_ident = strid(list(filter(None, [self.path, "Untagged_" + self.ident])))
-        return model.UnprovenMessage(full_ident, links, fields).merged().proven()
+        try:
+            return model.UnprovenMessage(full_ident, links, fields).merged().proven()
+        except Exception as e:
+            raise Asn2RflxError(f"invalid message detected: `{self}`") from e
 
     @lru_cache(16)
     def tlv_ty(self) -> model.Type:
         """The tag-length-value (TLV) encoding of this type."""
+        lv_ty = self.lv_ty()
+        f = Field
         try:
-            lv_ty = self.lv_ty()
-            f = Field
             tag_match = self.tag.matches("Tag")
-            links = [
-                Link(INITIAL, f("Tag")),
-                # If the current tag is not what we want, then directly jump to FINAL.
-                Link(f("Tag"), FINAL, condition=Not(tag_match)),
-                Link(f("Tag"), f("Untagged"), condition=tag_match),
-                Link(f("Untagged"), FINAL),
-            ]
-            fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): lv_ty}
-            return (
-                model.UnprovenMessage(self.full_ident, links, fields).merged().proven()
-            )
         except NotImplementedError:
             return self.v_ty()
+        links = [
+            Link(INITIAL, f("Tag")),
+            # If the current tag is not what we want, then directly jump to FINAL.
+            Link(f("Tag"), FINAL, condition=Not(tag_match)),
+            Link(f("Tag"), f("Untagged"), condition=tag_match),
+            Link(f("Untagged"), FINAL),
+        ]
+        fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): lv_ty}
+        try:
+            res = model.UnprovenMessage(self.full_ident, links, fields)
+            return res.merged().proven()
+        except Exception as e:
+            raise Asn2RflxError(f"invalid message detected: `{res}`") from e
 
     @lru_cache(16)
     def implicitly_tagged(
@@ -297,11 +303,21 @@ class ChoiceBerType(BerType):
 
     @lru_cache(1)
     def v_ty(self) -> model.Type:
+        variants: dict[str, tuple[AsnTag, model.Type]] = {}
+
+        def populate_variants(f: str, t: BerType, prefix: str = "") -> None:
+            if isinstance(t, ChoiceBerType):
+                # Workaround for nested choices: expose the variants
+                # of inner choices to the outer choice.
+                for f1, t1 in t.variants.items():
+                    populate_variants(f, t1, prefix=prefix + "_")
+            else:
+                variants[prefix + f] = (t.tag, t.lv_ty())
+
         try:
-            return tagged_union_message(
-                strid(self.full_ident),
-                {f: (t.tag, t.lv_ty()) for f, t in self.variants.items()},
-            )
+            for f, t in self.variants.items():
+                populate_variants(f, t)
+            return tagged_union_message(strid(self.full_ident), variants)
         except NotImplementedError as e:
             raise ValueError(
                 "cannot construct CHOICE from untagged or invalid BerType"
@@ -349,7 +365,12 @@ def simple_message(ident: str, fields: dict[str, model.Type]) -> model.Message:
     """
     fields_ = {Field(f): t for f, t in fields.items()}
     links = [Link(*pair) for pair in windowed([INITIAL, *fields_.keys(), FINAL], 2)]
-    return model.UnprovenMessage(ident, links, fields_).merged().proven()
+
+    try:
+        res = model.UnprovenMessage(ident, links, fields_)
+        return res.merged().proven()
+    except Exception as e:
+        raise Asn2RflxError(f"invalid message detected: `{res}`") from e
 
 
 def tagged_union_message(
@@ -371,7 +392,12 @@ def tagged_union_message(
         ),
         Link(Field("Tag"), FINAL, condition=And(*map(Not, matches.values()))),
     ]
-    return model.UnprovenMessage(ident, links, fields).merged().proven()
+
+    try:
+        res = model.UnprovenMessage(ident, links, fields)
+        return res.merged().proven()
+    except Exception as e:
+        raise Asn2RflxError(f"invalid message detected: `{res}`") from e
 
 
 HELPER_TYPES = [
