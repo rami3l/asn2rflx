@@ -28,7 +28,7 @@ ASN_SHORT_OCTET_STRINGS = strats.text(max_size=ASN_SHORT_LEN)
 # TODO: Support long lengths here.
 @hypot.given(id=ASN_SHORT_INTS, question=ASN_SHORT_IA5STRINGS)
 @hypot.example(id=0, question="")
-@hypot.settings(deadline=2 * 60000)
+@hypot.settings(deadline=None)
 @pytest.mark.xdist_group(name="foo")
 def test_foo_decode(
     id: int,
@@ -65,7 +65,7 @@ def test_foo_decode(
 )
 @hypot.example(range=0, name="", payload=0)
 @hypot.example(range=0, name="", payload=[])
-@hypot.settings(deadline=4 * 60000)
+@hypot.settings(deadline=None)
 @pytest.mark.xdist_group(name="rocket")
 def test_rocket_decode(
     range: int,
@@ -119,7 +119,7 @@ def test_rocket_decode(
 @hypot.example(name="", variant="ae", payload=[])
 @hypot.example(name="", variant="ci", payload=[])
 @hypot.example(name="", variant="ce", payload=[])
-@hypot.settings(deadline=4 * 60000)
+@hypot.settings(deadline=None)
 @pytest.mark.xdist_group(name="tagged")
 def test_tagged_decode(
     name: str,
