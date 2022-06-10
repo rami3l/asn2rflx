@@ -79,7 +79,7 @@ class AsnTypeConverter:
         fields = cast(list[ber.Type], message.root_members)
         res = prelude.SequenceBerType(
             self.path(relpath),
-            from_asn1_name(message.name),
+            from_asn1_name(message.name or message.type_name),
             frozendict(
                 {
                     from_asn1_name(field.name): self.convert(field, relpath)
@@ -102,7 +102,7 @@ class AsnTypeConverter:
         fields = cast(list[ber.Type], message.members)
         res = prelude.ChoiceBerType(
             self.path(relpath),
-            from_asn1_name(message.name),
+            from_asn1_name(message.name or message.type_name),
             frozendict(
                 {
                     from_asn1_name(field.name): self.convert(field, relpath)

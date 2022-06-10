@@ -1,9 +1,10 @@
+import os
 from dataclasses import dataclass
+from distutils.util import strtobool
 from enum import Enum, unique
 from functools import lru_cache, reduce
 from typing import Mapping, Optional, Protocol, cast
 
-from asn1tools.codecs.ber import Class as AsnTagClass
 from asn1tools.codecs.ber import Tag as AsnTagNum
 from frozendict import frozendict
 from more_itertools import windowed
@@ -17,7 +18,19 @@ from rflx.model.type_ import OPAQUE
 from asn2rflx.error import Asn2RflxError
 from asn2rflx.utils import strid
 
+SKIP_PROOF: bool = (
+    strtobool(got) if (got := os.environ.get("ASN2RFLX_SKIP_PROOF")) else False
+)
+
+
 PRELUDE_NAME: str = "Prelude"
+
+
+class AsnTagClass:
+    UNIVERSAL = 0b00
+    APPLICATION = 0b01
+    CONTEXT_SPECIFIC = 0b10
+    PRIVATE = 0b11
 
 
 class AsnTagForm:
@@ -36,7 +49,7 @@ class AsnTag:
     )
 
     @classmethod
-    @lru_cache(16)
+    @lru_cache
     def ty(cls) -> model.Type:
         """The ASN Tag message type in RecordFlux."""
         return simple_message(
@@ -48,7 +61,7 @@ class AsnTag:
             },
         )
 
-    @lru_cache(16)
+    @lru_cache
     def matches(self, ident: str) -> Expr:
         kvs = {"Class": self.class_, "Form": self.form, "Num": self.num}
         eqs = (
@@ -107,7 +120,7 @@ class BerType(Protocol):
         """The `RAW` RecordFlux representation of this type."""
         return OPAQUE
 
-    @lru_cache(16)
+    @lru_cache
     def lv_ty(self) -> model.Type:
         """The `Untagged`, length-value (LV) encoding of this type."""
         f = Field
@@ -120,11 +133,15 @@ class BerType(Protocol):
         fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
         full_ident = strid(list(filter(None, [self.path, "Untagged_" + self.ident])))
         try:
-            return model.UnprovenMessage(full_ident, links, fields).merged().proven()
+            return (
+                model.UnprovenMessage(full_ident, links, fields)
+                .merged()
+                .proven(skip_proof=SKIP_PROOF)
+            )
         except Exception as e:
             raise Asn2RflxError(f"invalid message detected: `{self}`") from e
 
-    @lru_cache(16)
+    @lru_cache
     def tlv_ty(self) -> model.Type:
         """The tag-length-value (TLV) encoding of this type."""
         lv_ty = self.lv_ty()
@@ -143,11 +160,11 @@ class BerType(Protocol):
         fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): lv_ty}
         try:
             res = model.UnprovenMessage(self.full_ident, links, fields)
-            return res.merged().proven()
+            return res.merged().proven(skip_proof=SKIP_PROOF)
         except Exception as e:
-            raise Asn2RflxError(f"invalid message detected: `{res}`") from e
+            raise Asn2RflxError(f"invalid message detected: `{self.full_ident}`") from e
 
-    @lru_cache(16)
+    @lru_cache
     def implicitly_tagged(
         self, tag: AsnTag, path: Optional[str]
     ) -> "ImplicitlyTaggedBerType":
@@ -162,7 +179,7 @@ class BerType(Protocol):
             path or self.path,
         )
 
-    @lru_cache(16)
+    @lru_cache
     def explicitly_tagged(self, tag: AsnTag, path: str) -> "ImplicitlyTaggedBerType":
         """
         The `EXPLICIT` tag-length-value (TLV) encoding of this type.
@@ -203,11 +220,11 @@ class DefiniteBerType(SimpleBerType):
 
     _v_ty: model.Type
 
-    @lru_cache(16)
+    @lru_cache
     def v_ty(self) -> model.Type:
         return self._v_ty
 
-    @lru_cache(16)
+    @lru_cache
     def lv_ty(self) -> model.Type:
         """The `Untagged`, length-value (LV) encoding of this type."""
         f = Field
@@ -277,7 +294,7 @@ class SequenceOfBerType(BerType):
 
     elem_tlv_ty: model.Type
 
-    @lru_cache(16)
+    @lru_cache
     def v_ty(self) -> model.Type:
         return model.Sequence(
             strid(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
@@ -338,11 +355,14 @@ class ImplicitlyTaggedBerType(BerType):
 
     @property
     def path(self) -> str:
+        if self.tag.class_ == AsnTagClass.UNIVERSAL:
+            return PRELUDE_NAME
         return self._path
 
     @property
     def ident(self) -> str:
-        prefix = "Univ"
+        if self.tag.class_ == AsnTagClass.UNIVERSAL:
+            return self.base.ident
         if self.tag.class_ == AsnTagClass.APPLICATION:
             prefix = "Appl"
         elif self.tag.class_ == AsnTagClass.CONTEXT_SPECIFIC:
@@ -368,9 +388,9 @@ def simple_message(ident: str, fields: dict[str, model.Type]) -> model.Message:
 
     try:
         res = model.UnprovenMessage(ident, links, fields_)
-        return res.merged().proven()
+        return res.merged().proven(skip_proof=SKIP_PROOF)
     except Exception as e:
-        raise Asn2RflxError(f"invalid message detected: `{res}`") from e
+        raise Asn2RflxError(f"invalid message detected: `{ident}`") from e
 
 
 def tagged_union_message(
@@ -395,9 +415,9 @@ def tagged_union_message(
 
     try:
         res = model.UnprovenMessage(ident, links, fields)
-        return res.merged().proven()
+        return res.merged().proven(skip_proof=SKIP_PROOF)
     except Exception as e:
-        raise Asn2RflxError(f"invalid message detected: `{res}`") from e
+        raise Asn2RflxError(f"invalid message detected: `{ident}`") from e
 
 
 HELPER_TYPES = [
