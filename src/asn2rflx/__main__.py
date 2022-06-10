@@ -29,8 +29,13 @@ def main() -> None:
     )
     model = Model(
         types=[
-            *prelude.MODEL.types,
-            *AsnTypeConverter().convert_spec(spec).values(),
+            # TODO: Should we include all the prelude types in the resulting
+            # Model? It's nice for writing, but not necessary for reading and
+            # is costing us much time on message proving.
+            # *prelude.MODEL.types,
+            *AsnTypeConverter()
+            .convert_spec(spec)
+            .values(),
         ]
     )
     model.write_specification_files(outpath)

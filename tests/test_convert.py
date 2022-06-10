@@ -39,7 +39,7 @@ def test_foo_decode(
 
     types = foo.values()
     # pprint({str(ty) for ty in types})
-    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
+    model = PyRFLX(model=Model(types=[*types]))
     pkg = model.package("Foo")
 
     (expected := pkg.new_message("Question")).parse(
@@ -77,7 +77,7 @@ def test_rocket_decode(
 
     types = rocket.values()
     # pprint({str(ty) for ty in types})
-    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
+    model = PyRFLX(model=Model(types=[*types]))
     pkg = model.package("World_Schema")
 
     name1 = name.encode()
@@ -131,7 +131,7 @@ def test_tagged_decode(
 
     types = tagged.values()
     # pprint({str(ty) for ty in types})
-    model = PyRFLX(model=Model(types=[*prelude.MODEL.types, *types]))
+    model = PyRFLX(model=Model(types=[*types]))
     pkg = model.package("Tagged_Test")
 
     name1 = name.encode()
