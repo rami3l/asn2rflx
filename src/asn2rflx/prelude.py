@@ -326,9 +326,12 @@ class ChoiceBerType(BerType):
                 # Workaround for nested choices: expose the variants
                 # of inner choices to the outer choice.
                 for f1, t1 in t.variants.items():
-                    populate_variants(f, t1, prefix=prefix + "_")
+                    populate_variants(f1, t1, prefix=f"{prefix}_{f}")
             else:
-                variants[prefix + f] = (t.tag, t.lv_ty(skip_proof=skip_proof))
+                variants[f"{prefix}_{f}" if prefix else f] = (
+                    t.tag,
+                    t.lv_ty(skip_proof=skip_proof),
+                )
 
         try:
             for f, t in self.variants.items():
