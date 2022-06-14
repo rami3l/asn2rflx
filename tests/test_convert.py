@@ -154,3 +154,41 @@ def test_tagged_decode(
             i.bytestring[2:]
             for i in cast(list[MessageValue], expected.get(payload_field))
         ] == [encode_signed_integer(i) for i in cast(list[int], payload)]
+
+
+def test_snmpv1_decode() -> None:
+    snmpv1_spec = asn1.compile_files(
+        [
+            ASSETS + "rfc1155.asn",
+            ASSETS + "rfc1157.asn",
+        ]
+    )
+    snmpv1 = AsnTypeConverter(skip_proof=True).convert_spec(snmpv1_spec)
+
+    types = snmpv1.values()
+    # pprint({str(ty) for ty in types})
+    model = PyRFLX(model=Model(types=[*types]))
+    pkg = model.package("RFC1157_SNMP")
+
+    (expected := pkg.new_message("Message")).parse(
+        b"0G\x02\x01\x00\x04\x06public\xa2:\x02\x01'\x02\x01\x00\x02\x01\x000/0\x11\x06\x08+\x06\x01\x02\x01\x01\x05\x00\x04\x05B63000\x1a\x06\x08+\x06\x01\x02\x01\x01\x06\x00\x04\x0eChandra's cube"
+    )
+
+    assert expected.get("Tag_Class") == 0
+    assert expected.get("Tag_Form") == 1
+    assert expected.get("Tag_Num") == 16
+
+    pdu = "Untagged_Value_data_get_response_Value_"
+
+    assert expected.get(pdu + "request_id_Untagged_Value") == b"\x27"
+    assert expected.get(pdu + "error_status_Untagged_Value") == b"\x00"
+    assert expected.get(pdu + "error_index_Untagged_Value") == b"\x00"
+
+    variable_bindings = pdu + "variable_bindings_Untagged_Value"
+    assert [
+        i.bytestring[2:]
+        for i in cast(list[MessageValue], expected.get(variable_bindings))
+    ] == [
+        b"\x06\x08+\x06\x01\x02\x01\x01\x05\x00" + b"\x04\x05B6300",
+        b"\x06\x08+\x06\x01\x02\x01\x01\x06\x00" + b"\x04\x0eChandra's cube",
+    ]
