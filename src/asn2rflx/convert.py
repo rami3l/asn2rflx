@@ -17,6 +17,7 @@ class AsnTypeConverter:
     """A converter from `asn1tools`' BER types to RecordFlux types."""
 
     base_path: str = ""
+    skip_proof: bool = False
 
     def path(self, relpath: str) -> str:
         return strid(list(filter(None, [self.base_path, relpath])))
@@ -93,7 +94,9 @@ class AsnTypeConverter:
     def _(self, sequence: ber.SequenceOf, relpath: str = "") -> prelude.BerType:
         res = prelude.SequenceOfBerType(
             self.path(relpath),
-            self.convert(sequence.element_type, relpath).tlv_ty(),
+            self.convert(sequence.element_type, relpath).tlv_ty(
+                skip_proof=self.skip_proof
+            ),
         )
         return self.__convert_implicit(res, sequence, relpath)
 
@@ -128,7 +131,9 @@ class AsnTypeConverter:
         for path, tys in spec.modules.items():
             res |= {
                 (
-                    ty1 := self.convert(ty.type, from_asn1_name(path)).tlv_ty()
+                    ty1 := self.convert(ty.type, from_asn1_name(path)).tlv_ty(
+                        skip_proof=self.skip_proof
+                    )
                 ).qualified_identifier: ty1
                 for ty in tys.values()
             }

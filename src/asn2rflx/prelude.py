@@ -1,6 +1,4 @@
-import os
 from dataclasses import dataclass
-from distutils.util import strtobool
 from enum import Enum, unique
 from functools import lru_cache, reduce
 from typing import Mapping, Optional, Protocol, cast
@@ -17,11 +15,6 @@ from rflx.model.type_ import OPAQUE
 
 from asn2rflx.error import Asn2RflxError
 from asn2rflx.utils import strid
-
-SKIP_PROOF: bool = (
-    strtobool(got) if (got := os.environ.get("ASN2RFLX_SKIP_PROOF")) else False
-)
-
 
 PRELUDE_NAME: str = "Prelude"
 
@@ -59,6 +52,7 @@ class AsnTag:
                 "Form": ASN_TAG_FORM_TY,
                 "Num": ASN_TAG_NUM_TY,
             },
+            skip_proof=False,
         )
 
     @lru_cache
@@ -116,12 +110,12 @@ class BerType(Protocol):
         )
 
     @lru_cache(1)
-    def v_ty(self) -> model.Type:
+    def v_ty(self, skip_proof: bool = False) -> model.Type:
         """The `RAW` RecordFlux representation of this type."""
         return OPAQUE
 
     @lru_cache
-    def lv_ty(self) -> model.Type:
+    def lv_ty(self, skip_proof: bool = False) -> model.Type:
         """The `Untagged`, length-value (LV) encoding of this type."""
         f = Field
         links = [
@@ -130,26 +124,29 @@ class BerType(Protocol):
             Link(f("Length"), f("Value"), size=Mul(Variable("Length"), Number(8))),
             Link(f("Value"), FINAL),
         ]
-        fields = {f("Length"): ASN_LENGTH_TY, f("Value"): self.v_ty()}
+        fields = {
+            f("Length"): ASN_LENGTH_TY,
+            f("Value"): self.v_ty(skip_proof=skip_proof),
+        }
         full_ident = strid(list(filter(None, [self.path, "Untagged_" + self.ident])))
         try:
             return (
                 model.UnprovenMessage(full_ident, links, fields)
                 .merged()
-                .proven(skip_proof=SKIP_PROOF)
+                .proven(skip_proof=skip_proof)
             )
         except Exception as e:
             raise Asn2RflxError(f"invalid message detected: `{self}`") from e
 
     @lru_cache
-    def tlv_ty(self) -> model.Type:
+    def tlv_ty(self, skip_proof: bool = False) -> model.Type:
         """The tag-length-value (TLV) encoding of this type."""
-        lv_ty = self.lv_ty()
+        lv_ty = self.lv_ty(skip_proof=skip_proof)
         f = Field
         try:
             tag_match = self.tag.matches("Tag")
         except NotImplementedError:
-            return self.v_ty()
+            return self.v_ty(skip_proof=skip_proof)
         links = [
             Link(INITIAL, f("Tag")),
             # If the current tag is not what we want, then directly jump to FINAL.
@@ -160,7 +157,7 @@ class BerType(Protocol):
         fields = {f("Tag"): ASN_TAG_TY, f("Untagged"): lv_ty}
         try:
             res = model.UnprovenMessage(self.full_ident, links, fields)
-            return res.merged().proven(skip_proof=SKIP_PROOF)
+            return res.merged().proven(skip_proof=skip_proof)
         except Exception as e:
             raise Asn2RflxError(f"invalid message detected: `{self.full_ident}`") from e
 
@@ -221,14 +218,14 @@ class DefiniteBerType(SimpleBerType):
     _v_ty: model.Type
 
     @lru_cache
-    def v_ty(self) -> model.Type:
+    def v_ty(self, skip_proof: bool = False) -> model.Type:
         return self._v_ty
 
     @lru_cache
-    def lv_ty(self) -> model.Type:
+    def lv_ty(self, skip_proof: bool = False) -> model.Type:
         """The `Untagged`, length-value (LV) encoding of this type."""
         f = Field
-        v_ty = self.v_ty()
+        v_ty = self.v_ty(skip_proof=skip_proof)
         links = [Link(INITIAL, f("Length"))]
         fields = {f("Length"): cast(model.Type, ASN_LENGTH_TY)}
         is_null_v_ty = isinstance(v_ty, model.AbstractMessage) and (
@@ -246,7 +243,7 @@ class DefiniteBerType(SimpleBerType):
             ]
             fields[f("Value")] = v_ty
         full_ident = strid(list(filter(None, [self.path, "Untagged_" + self.ident])))
-        return model.Message(full_ident, links, fields)
+        return model.Message(full_ident, links, fields, skip_proof=skip_proof)
 
 
 @dataclass(frozen=True)
@@ -266,9 +263,11 @@ class SequenceBerType(BerType):
     fields: Mapping[str, BerType]
 
     @lru_cache(1)
-    def v_ty(self) -> model.Type:
+    def v_ty(self, skip_proof: bool = False) -> model.Type:
         return simple_message(
-            strid(self.full_ident), {f: t.tlv_ty() for f, t in self.fields.items()}
+            strid(self.full_ident),
+            {f: t.tlv_ty(skip_proof) for f, t in self.fields.items()},
+            skip_proof=skip_proof,
         )
 
     @property
@@ -295,7 +294,7 @@ class SequenceOfBerType(BerType):
     elem_tlv_ty: model.Type
 
     @lru_cache
-    def v_ty(self) -> model.Type:
+    def v_ty(self, skip_proof: bool = False) -> model.Type:
         return model.Sequence(
             strid(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
             self.elem_tlv_ty,
@@ -319,7 +318,7 @@ class ChoiceBerType(BerType):
     variants: Mapping[str, BerType]
 
     @lru_cache(1)
-    def v_ty(self) -> model.Type:
+    def v_ty(self, skip_proof: bool = False) -> model.Type:
         variants: dict[str, tuple[AsnTag, model.Type]] = {}
 
         def populate_variants(f: str, t: BerType, prefix: str = "") -> None:
@@ -329,12 +328,14 @@ class ChoiceBerType(BerType):
                 for f1, t1 in t.variants.items():
                     populate_variants(f, t1, prefix=prefix + "_")
             else:
-                variants[prefix + f] = (t.tag, t.lv_ty())
+                variants[prefix + f] = (t.tag, t.lv_ty(skip_proof=skip_proof))
 
         try:
             for f, t in self.variants.items():
                 populate_variants(f, t)
-            return tagged_union_message(strid(self.full_ident), variants)
+            return tagged_union_message(
+                strid(self.full_ident), variants, skip_proof=skip_proof
+            )
         except NotImplementedError as e:
             raise ValueError(
                 "cannot construct CHOICE from untagged or invalid BerType"
@@ -371,14 +372,16 @@ class ImplicitlyTaggedBerType(BerType):
             prefix = "Priv"
         return f"{prefix}{self.tag.num:02}_{self.base.ident}"
 
-    def v_ty(self) -> model.Type:  # type: ignore [override]
-        return self.base.v_ty()
+    def v_ty(self, skip_proof: bool = False) -> model.Type:  # type: ignore [override]
+        return self.base.v_ty(skip_proof=skip_proof)
 
-    def lv_ty(self) -> model.Type:  # type: ignore [override]
-        return self.base.lv_ty()
+    def lv_ty(self, skip_proof: bool = False) -> model.Type:  # type: ignore [override]
+        return self.base.lv_ty(skip_proof=skip_proof)
 
 
-def simple_message(ident: str, fields: dict[str, model.Type]) -> model.Message:
+def simple_message(
+    ident: str, fields: dict[str, model.Type], skip_proof: bool = False
+) -> model.Message:
     """
     Returns a simple RecordFlux message (record/struct) out of a mapping from field
     names to their respective types.
@@ -388,13 +391,13 @@ def simple_message(ident: str, fields: dict[str, model.Type]) -> model.Message:
 
     try:
         res = model.UnprovenMessage(ident, links, fields_)
-        return res.merged().proven(skip_proof=SKIP_PROOF)
+        return res.merged().proven(skip_proof=skip_proof)
     except Exception as e:
         raise Asn2RflxError(f"invalid message detected: `{ident}`") from e
 
 
 def tagged_union_message(
-    ident: str, variants: dict[str, tuple[AsnTag, model.Type]]
+    ident: str, variants: dict[str, tuple[AsnTag, model.Type]], skip_proof: bool = False
 ) -> model.Message:
     """
     Returns a RecordFlux message representing a tagged union out of a mapping from
@@ -415,7 +418,7 @@ def tagged_union_message(
 
     try:
         res = model.UnprovenMessage(ident, links, fields)
-        return res.merged().proven(skip_proof=SKIP_PROOF)
+        return res.merged().proven(skip_proof=skip_proof)
     except Exception as e:
         raise Asn2RflxError(f"invalid message detected: `{ident}`") from e
 
@@ -493,5 +496,9 @@ BER_TYPES = [
     ),
 ]
 
-MODEL = model.Model(types=HELPER_TYPES + [ty.tlv_ty() for ty in BER_TYPES])
+"""
+MODEL = model.Model(
+    types=HELPER_TYPES + [ty.tlv_ty(skip_proof=SKIP_PROOF) for ty in BER_TYPES]
+)
+"""
 """Base prelude without any structured types."""

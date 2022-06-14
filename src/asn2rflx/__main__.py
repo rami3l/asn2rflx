@@ -1,4 +1,6 @@
 import logging
+import os
+from distutils.util import strtobool
 from pathlib import Path
 
 import asn1tools as asn1
@@ -8,9 +10,7 @@ from rflx.model.model import Model
 from asn2rflx import prelude
 from asn2rflx.convert import AsnTypeConverter
 
-
-def greeting() -> str:
-    return "Hello from PDM!"
+SKIP_PROOF: bool = strtobool(os.environ.get("ASN2RFLX_SKIP_PROOF", "false"))
 
 
 def main() -> None:
@@ -33,7 +33,7 @@ def main() -> None:
             # Model? It's nice for writing, but not necessary for reading and
             # is costing us much time on message proving.
             # *prelude.MODEL.types,
-            *AsnTypeConverter()
+            *AsnTypeConverter(skip_proof=SKIP_PROOF)
             .convert_spec(spec)
             .values(),
         ]
