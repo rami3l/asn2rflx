@@ -500,9 +500,10 @@ BER_TYPES = [
     ),
 ]
 
-"""
-MODEL = model.Model(
-    types=HELPER_TYPES + [ty.tlv_ty(skip_proof=SKIP_PROOF) for ty in BER_TYPES]
-)
-"""
-"""Base prelude without any structured types."""
+
+@lru_cache
+def prelude_model(skip_proof: bool = False) -> model.Model:
+    """Base prelude without any structured types."""
+    return model.Model(
+        types=HELPER_TYPES + [ty.tlv_ty(skip_proof=skip_proof) for ty in BER_TYPES]
+    )
