@@ -322,13 +322,14 @@ class ChoiceBerType(BerType):
         variants: dict[str, tuple[AsnTag, model.Type]] = {}
 
         def populate_variants(f: str, t: BerType, prefix: str = "") -> None:
+            pf = f"{prefix}_{f}" if prefix else f
             if isinstance(t, ChoiceBerType):
                 # Workaround for nested choices: expose the variants
                 # of inner choices to the outer choice.
                 for f1, t1 in t.variants.items():
-                    populate_variants(f1, t1, prefix=f"{prefix}_{f}")
+                    populate_variants(f1, t1, prefix=pf)
             else:
-                variants[f"{prefix}_{f}" if prefix else f] = (
+                variants[pf] = (
                     t.tag,
                     t.lv_ty(skip_proof=skip_proof),
                 )
