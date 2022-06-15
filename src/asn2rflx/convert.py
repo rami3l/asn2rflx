@@ -28,13 +28,13 @@ class AsnTypeConverter:
         raise NotImplementedError(f"conversion not implemented for {val}")
 
     def __convert_implicit(
-        self, base: prelude.BerType, val: ber.Type, relpath: str = ""
+        self, base: prelude.BerType, tag_src: ber.Type, relpath: str = ""
     ) -> prelude.BerType:
-        if not val.tag_len:
+        if not tag_src.tag_len:
             return base
-        if val.tag_len > 1:
+        if tag_src.tag_len > 1:
             raise prelude.AsnTag.LONG_TAG_UNSUPPORTED_ERROR
-        tag = prelude.AsnTag.from_bytearray(val.tag)
+        tag = prelude.AsnTag.from_bytearray(tag_src.tag)
         if tag == base.tag:
             return base
         return base.implicitly_tagged(tag, self.path(relpath))
@@ -129,12 +129,12 @@ class AsnTypeConverter:
         """
         res: dict[ID, model.Type] = {}
         for path, tys in spec.modules.items():
-            res |= {
-                (
-                    ty1 := self.convert(ty.type, from_asn1_name(path)).tlv_ty(
-                        skip_proof=self.skip_proof
-                    )
-                ).qualified_identifier: ty1
-                for ty in tys.values()
-            }
+            for ty in tys.values():
+                ty1 = self.convert(ty.type, from_asn1_name(path)).tlv_ty(
+                    skip_proof=self.skip_proof
+                )
+                ident = ty1.qualified_identifier
+                if not str(ident).startswith(prelude.PRELUDE_NAME):
+                    # Exclude `Prelude` types.
+                    res[ident] = ty1
         return res
