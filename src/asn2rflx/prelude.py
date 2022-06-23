@@ -8,7 +8,7 @@ from frozendict import frozendict
 from more_itertools import windowed
 from more_itertools.recipes import flatten
 from rflx import model
-from rflx.expression import And, Equal, Expr, Mul, Not, Number, Size, Variable
+from rflx.expression import And, Equal, Expr, Mul, Number, Size, Variable
 from rflx.identifier import ID
 from rflx.model.message import FINAL, INITIAL, Field, Link
 from rflx.model.type_ import OPAQUE
@@ -149,8 +149,6 @@ class BerType(Protocol):
             return self.v_ty(skip_proof=skip_proof)
         links = [
             Link(INITIAL, f("Tag")),
-            # If the current tag is not what we want, then directly jump to FINAL.
-            Link(f("Tag"), FINAL, condition=Not(tag_match)),
             Link(f("Tag"), f("Untagged"), condition=tag_match),
             Link(f("Untagged"), FINAL),
         ]
@@ -417,7 +415,6 @@ def tagged_union_message(
             [Link(Field("Tag"), f, condition=m), Link(f, FINAL)]
             for f, m in matches.items()
         ),
-        Link(Field("Tag"), FINAL, condition=And(*map(Not, matches.values()))),
     ]
 
     try:

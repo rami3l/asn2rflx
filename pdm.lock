@@ -112,7 +112,7 @@ dependencies = [
 
 [[package]]
 name = "hypothesis"
-version = "6.47.3"
+version = "6.47.4"
 requires_python = ">=3.7"
 summary = "A library for property-based testing"
 dependencies = [
@@ -302,7 +302,7 @@ name = "recordflux"
 version = "0.6.0rc0"
 requires_python = ">=3.7"
 git = "https://github.com/Componolit/RecordFlux"
-revision = "ab083d06db86aa088d7a673417fdd99dc39bde2a"
+revision = "f458999bbe2023664ecca9253e32eddbad600f7d"
 summary = "A toolset for the formal specification of messages and the generation of verifiable binary parsers and message generators."
 dependencies = [
     "RecordFlux-parser==0.11.0",
@@ -472,9 +472,9 @@ content_hash = "sha256:2117a8444cb61689d13d5a04c98986812bc3fbc69b33461c073702d04
     {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
     {file = "humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc"},
 ]
-"hypothesis 6.47.3" = [
-    {file = "hypothesis-6.47.3-py3-none-any.whl", hash = "sha256:148198eacaa52aabd5b598e989d6906311a0580af6f99e76e3ace8d60762779a"},
-    {file = "hypothesis-6.47.3.tar.gz", hash = "sha256:3c6d99cd7540a64c37d88f86a7509c0ca29cda37a82a957340fba11388dfb9ce"},
+"hypothesis 6.47.4" = [
+    {file = "hypothesis-6.47.4-py3-none-any.whl", hash = "sha256:4328db270ae6c9121763980afa5c841b0fbdd69e6f07e30f5d1b204a4a8b3c37"},
+    {file = "hypothesis-6.47.4.tar.gz", hash = "sha256:0f98e20e8427d99af93a7d2d8184c07f6d5df2666d27626979c52b67b93090e0"},
 ]
 "icontract 2.6.1" = [
     {file = "icontract-2.6.1.tar.gz", hash = "sha256:dacfc55009993058cd17576faa291ab76b6f39d80ec9d1e524778cd79da11857"},
