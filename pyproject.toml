@@ -1,6 +1,6 @@
 [project]
 name = "asn2rflx"
-version = ""
+version = "0.0.0"
 description = ""
 authors = [{ name = "rami3l", email = "rami3l@outlook.com" }]
 dependencies = [
@@ -36,6 +36,11 @@ dev = [
 main = "python -m asn2rflx"
 test = "pytest -n auto tests/"
 fmt = "black ."
+
+# Enable `console_scripts` to be visible to tools like `pipx`.
+# See: https://pdm.fming.dev/latest/pyproject/pep621/#console-scripts
+[project.scripts]
+asn2rflx = "asn2rflx.__main__:main"
 
 [tool.mypy]
 python_version = 3.9
