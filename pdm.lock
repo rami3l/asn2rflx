@@ -302,7 +302,7 @@ name = "recordflux"
 version = "0.6.0rc0"
 requires_python = ">=3.7"
 git = "https://github.com/Componolit/RecordFlux"
-revision = "f458999bbe2023664ecca9253e32eddbad600f7d"
+revision = "6613d1382396a0c4cd4ceb52bdff114c92d3c598"
 summary = "A toolset for the formal specification of messages and the generation of verifiable binary parsers and message generators."
 dependencies = [
     "RecordFlux-parser==0.11.0",
