@@ -1,10 +1,29 @@
-# [WIP] Asn2Rflx
+# Asn2Rflx
 
-A transpiler from [ASN.1] to [RecordFlux].
+[WIP] A transpiler from [ASN.1] to [RecordFlux].
 
 It reads ASN.1 syntax and generates corresponding RecordFlux `Model`s in order to facilitate modeling process of ASN.1 based protocols' message handling logic.
 
-## Quick Start
+---
+
+## Contents
+
+- [Asn2Rflx](#asn2rflx)
+  - [Contents](#contents)
+  - [Installation](#installation)
+  - [Development](#development)
+
+---
+
+## Installation
+
+You can easily install `asn2rflx` with installers like [`pipx`]:
+
+```sh
+pipx install git+https://github.com/rami3l/asn2rflx.git
+```
+
+## Development
 
 This project is managed with [`pdm`].
 
@@ -17,3 +36,4 @@ Several shortcuts have been set in [`pyproject.toml`](pyproject.toml):
 [asn.1]: https://en.wikipedia.org/wiki/ASN.1
 [recordflux]: https://github.com/Componolit/RecordFlux
 [`pdm`]: https://github.com/pdm-project/pdm
+[`pipx`]: https://github.com/pypa/pipx

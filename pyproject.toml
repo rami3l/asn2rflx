@@ -1,7 +1,7 @@
 [project]
 name = "asn2rflx"
 version = "0.0.0"
-description = ""
+description = "A transpiler from ASN.1 to RecordFlux."
 authors = [{ name = "rami3l", email = "rami3l@outlook.com" }]
 dependencies = [
     "asn1tools>=0.161.0",
