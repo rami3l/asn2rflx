@@ -57,6 +57,7 @@ class AsnTag:
 
     @lru_cache
     def matches(self, ident: str) -> Expr:
+        """Returns the matching condition of this `AsnTag` in RecordFlux."""
         kvs = {"Class": self.class_, "Form": self.form, "Num": self.num}
         eqs = (
             cast(Expr, Equal(Variable(f"{ident}_{k}"), Number(v)))
@@ -190,6 +191,8 @@ class BerType(Protocol):
 
 @dataclass(frozen=True)
 class SimpleBerType(BerType):
+    """A `BerType` with a known tag."""
+
     _path: str
 
     @property
@@ -211,7 +214,11 @@ class SimpleBerType(BerType):
 
 @dataclass(frozen=True)
 class DefiniteBerType(SimpleBerType):
-    """A `SimpleBerType` with a known underlying RecordFlux Type."""
+    """
+    A `SimpleBerType` with a known underlying RecordFlux Type other than `OPAQUE`.
+
+    e.g. `BOOLEAN`, `NULL`
+    """
 
     _v_ty: model.Type
 
@@ -262,6 +269,7 @@ class SequenceBerType(BerType):
 
     @lru_cache(1)
     def v_ty(self, skip_proof: bool = False) -> model.Type:
+        # A `SEQUENCE` is just a `message` of all its `root_members`.
         return simple_message(
             strid(self.full_ident),
             {f: t.tlv_ty(skip_proof) for f, t in self.fields.items()},
@@ -293,6 +301,7 @@ class SequenceOfBerType(BerType):
 
     @lru_cache
     def v_ty(self, skip_proof: bool = False) -> model.Type:
+        # A `SEQUENCE OF` is mapped directly to `sequence of`.
         return model.Sequence(
             strid(list(filter(None, [self.path, "Asn_Raw_" + self.ident]))),
             self.elem_tlv_ty,
@@ -335,6 +344,8 @@ class ChoiceBerType(BerType):
         try:
             for f, t in self.variants.items():
                 populate_variants(f, t)
+            # A `CHOICE` is mapped to a tagged union message:
+            # different tags expose different underlying values.
             return tagged_union_message(
                 strid(self.full_ident), variants, skip_proof=skip_proof
             )
@@ -346,6 +357,13 @@ class ChoiceBerType(BerType):
 
 @dataclass(frozen=True)
 class ImplicitlyTaggedBerType(BerType):
+    """
+    A simple wrapper over another `BerType`.
+
+    This wrapper keeps the same V and LV encoding `(v_ty, lv_ty)`,
+    but the tag is replaced in the TLV encoding `tlv_ty`.
+    """
+
     base: BerType
 
     _tag: AsnTag

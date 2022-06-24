@@ -5,7 +5,6 @@ import hypothesis as hypot
 import hypothesis.strategies as strats
 import pytest
 from asn1tools.codecs.ber import encode_signed_integer
-from asn2rflx import prelude
 from asn2rflx.convert import AsnTypeConverter
 from rflx.model.model import Model
 from rflx.pyrflx import PyRFLX
@@ -35,7 +34,7 @@ def test_foo_decode(
     question: str,
 ) -> None:
     foo_spec = asn1.compile_files(ASSETS + "foo.asn")
-    foo = AsnTypeConverter().convert_spec(foo_spec)
+    foo = AsnTypeConverter(skip_proof=False).convert_spec(foo_spec)
 
     types = foo.values()
     # pprint({str(ty) for ty in types})
@@ -73,7 +72,7 @@ def test_rocket_decode(
     payload: Union[int, list[int]],
 ) -> None:
     rocket_spec = asn1.compile_files(ASSETS + "rocket_mod.asn")
-    rocket = AsnTypeConverter().convert_spec(rocket_spec)
+    rocket = AsnTypeConverter(skip_proof=False).convert_spec(rocket_spec)
 
     types = rocket.values()
     # pprint({str(ty) for ty in types})
@@ -127,7 +126,7 @@ def test_tagged_decode(
     payload: Union[int, list[int]],
 ) -> None:
     tagged_spec = asn1.compile_files(ASSETS + "tagged.asn")
-    tagged = AsnTypeConverter().convert_spec(tagged_spec)
+    tagged = AsnTypeConverter(skip_proof=False).convert_spec(tagged_spec)
 
     types = tagged.values()
     # pprint({str(ty) for ty in types})
@@ -171,7 +170,9 @@ def test_snmpv1_decode() -> None:
     pkg = model.package("RFC1157_SNMP")
 
     (expected := pkg.new_message("Message")).parse(
-        b"0G\x02\x01\x00\x04\x06public\xa2:\x02\x01'\x02\x01\x00\x02\x01\x000/0\x11\x06\x08+\x06\x01\x02\x01\x01\x05\x00\x04\x05B63000\x1a\x06\x08+\x06\x01\x02\x01\x01\x06\x00\x04\x0eChandra's cube"
+        b"0G\x02\x01\x00\x04\x06public\xa2:\x02\x01'\x02\x01\x00\x02\x01\x000/"
+        b"0\x11\x06\x08+\x06\x01\x02\x01\x01\x05\x00\x04\x05B6300"
+        b"0\x1a\x06\x08+\x06\x01\x02\x01\x01\x06\x00\x04\x0eChandra's cube"
     )
 
     assert expected.get("Tag_Class") == 0

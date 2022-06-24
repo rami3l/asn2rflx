@@ -17,19 +17,33 @@ class AsnTypeConverter:
     """A converter from `asn1tools`' BER types to RecordFlux types."""
 
     base_path: str = ""
-    skip_proof: bool = False
+    """
+    Common base path of conversion.
+    All the ASN.1 types converted by this converter will be under this path.
+    """
+
+    skip_proof: bool = True
+    """
+    Whether RecordFlux proofs executed before code generation should be skipped.
+
+    In most cases, `True` is what you want, since when generated code gets compiled by
+    RecordFlux, those proofs will be executed again.
+    """
 
     def path(self, relpath: str) -> str:
+        """Returns the absolute path of `relpath` relative to `self.base_path`."""
         return strid(list(filter(None, [self.base_path, relpath])))
 
     # In Python 3.10+ this should be done with the `match-case` construct...
     @singledispatchmethod
     def convert(self, val, relpath: str = "") -> prelude.BerType:
+        """Converts an ASN.1 type to `BerType` under the given `self.base_path`."""
         raise NotImplementedError(f"conversion not implemented for {val}")
 
     def __convert_implicit(
         self, base: prelude.BerType, tag_src: ber.Type, relpath: str = ""
     ) -> prelude.BerType:
+        """Convert a `BerType` to implicitly tagged if its tag is not UNIVERSAL."""
         if not tag_src.tag_len:
             return base
         if tag_src.tag_len > 1:
@@ -77,7 +91,7 @@ class AsnTypeConverter:
 
     @convert.register  # type: ignore [no-redef]
     def _(self, message: ber.Sequence, relpath: str = "") -> prelude.BerType:
-        fields = cast(list[ber.Type], message.root_members)
+        fields: list[ber.Type] = message.root_members
         res = prelude.SequenceBerType(
             self.path(relpath),
             from_asn1_name(message.name or message.type_name),
@@ -102,7 +116,7 @@ class AsnTypeConverter:
 
     @convert.register  # type: ignore [no-redef]
     def _(self, message: ber.Choice, relpath: str = "") -> prelude.BerType:
-        fields = cast(list[ber.Type], message.members)
+        fields: list[ber.Type] = message.members
         res = prelude.ChoiceBerType(
             self.path(relpath),
             from_asn1_name(message.name or message.type_name),
