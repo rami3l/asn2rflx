@@ -12,6 +12,7 @@ It reads ASN.1 syntax and generates corresponding RecordFlux `Model`s in order t
   - [Contents](#contents)
   - [Installation](#installation)
   - [Development](#development)
+  - [Architecture](#architecture)
 
 ---
 
@@ -33,7 +34,12 @@ Several shortcuts have been set in [`pyproject.toml`](pyproject.toml):
 - `pdm run test` to launch tests.
 - `pdm run fmt` to format all Python source files.
 
+## Architecture
+
+See [`ARCHITECTURE.md`].
+
 [asn.1]: https://en.wikipedia.org/wiki/ASN.1
 [recordflux]: https://github.com/Componolit/RecordFlux
 [`pdm`]: https://github.com/pdm-project/pdm
 [`pipx`]: https://github.com/pypa/pipx
+[`architecture.md`]: docs/ARCHITECTURE.md
