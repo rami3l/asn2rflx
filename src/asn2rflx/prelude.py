@@ -16,8 +16,6 @@ from rflx.model.type_ import OPAQUE
 from asn2rflx.error import Asn2RflxError
 from asn2rflx.utils import strid
 
-from .__main__ import SKIP_PROOF
-
 PRELUDE_NAME: str = "Prelude"
 
 
@@ -188,7 +186,7 @@ class BerType(Protocol):
             path,
             "Explicit_" + self.ident,
             # A `frozendict` is required here to comply with `lru_cache`.
-            frozendict({"Inner": self}), 
+            frozendict({"Inner": self}),
         ).implicitly_tagged(tag, path)
 
 
@@ -451,36 +449,31 @@ HELPER_TYPES = [
         first=Number(0b00),
         last=Number(0b11),
         size=Number(2),
-        skip_proof=SKIP_PROOF,
     ),
     ASN_TAG_FORM_TY := model.RangeInteger(
         strid([PRELUDE_NAME, "Asn_Tag_Form"]),
         first=Number(0b0),
         last=Number(0b1),
         size=Number(1),
-        skip_proof=SKIP_PROOF,
     ),
     ASN_TAG_NUM_TY := model.RangeInteger(
         strid([PRELUDE_NAME, "Asn_Tag_Num"]),
         first=Number(0b00000),
         last=Number(0b11111),
         size=Number(5),
-        skip_proof=SKIP_PROOF,
     ),
-    ASN_TAG_TY := AsnTag.ty(skip_proof=SKIP_PROOF),
+    ASN_TAG_TY := AsnTag.ty(),
     ASN_LENGTH_TY := model.RangeInteger(
         strid([PRELUDE_NAME, "Asn_Length"]),
         first=Number(0x00),
         last=Number(0x7F),
         size=Number(8),
-        skip_proof=SKIP_PROOF,
     ),
     ASN_RAW_BOOLEAN_TY := model.Enumeration(
         strid([PRELUDE_NAME, "Asn_Raw_BOOLEAN"]),
         literals=[(i.name, Number(i.value)) for i in AsnRawBoolean],
         size=Number(8),
         always_valid=False,
-        skip_proof=SKIP_PROOF,
     ),
     ASN_RAW_NULL_TY := model.Message(
         strid([PRELUDE_NAME, "Asn_Raw_NULL"]),
