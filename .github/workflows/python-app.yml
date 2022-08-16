@@ -40,6 +40,7 @@ jobs:
         run: |
           python -m pip install -U pip setuptools wheel
           pip install pdm
+          pdm config python.use_venv false
           pdm sync
 
       - name: Lint with black

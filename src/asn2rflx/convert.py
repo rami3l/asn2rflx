@@ -55,6 +55,10 @@ class AsnTypeConverter:
 
     # ASN.1 Types
 
+    # The following types can be directly converted to their `BerType` counterparts.
+    # The only thing that we should care about is whether they are implicitly tagged.
+    # If they are, then we should generate an `ImplicitlyTaggedBerType` instead.
+
     @convert.register  # type: ignore [no-redef]
     def _(self, val: ber.Boolean, relpath: str = "") -> prelude.BerType:
         return self.__convert_implicit(prelude.BOOLEAN, val, relpath)
@@ -89,12 +93,17 @@ class AsnTypeConverter:
 
     # ASN.1 type constructors
 
+    # Each of these types is a certain composition of previous types.
+    # Apart from potential conversions to `ImplicitlyTaggedBerType`s,
+    # we should also recursively converting their member types accordingly.
+
     @convert.register  # type: ignore [no-redef]
     def _(self, message: ber.Sequence, relpath: str = "") -> prelude.BerType:
         fields: list[ber.Type] = message.root_members
         res = prelude.SequenceBerType(
             self.path(relpath),
             from_asn1_name(message.name or message.type_name),
+            # A `frozendict` is required here to comply with `lru_cache`.
             frozendict(
                 {
                     from_asn1_name(field.name): self.convert(field, relpath)
@@ -120,6 +129,7 @@ class AsnTypeConverter:
         res = prelude.ChoiceBerType(
             self.path(relpath),
             from_asn1_name(message.name or message.type_name),
+            # A `frozendict` is required here to comply with `lru_cache`.
             frozendict(
                 {
                     from_asn1_name(field.name): self.convert(field, relpath)
