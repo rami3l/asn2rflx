@@ -11,7 +11,7 @@ from rflx.model.model import Model
 from asn2rflx.convert import AsnTypeConverter
 from asn2rflx.prelude import prelude_model
 
-SKIP_PROOF: bool = strtobool(os.environ.get("ASN2RFLX_SKIP_PROOF", "true"))
+SKIP_PROOF: bool = bool(strtobool(os.environ.get("ASN2RFLX_SKIP_PROOF", "true")))
 
 
 def main() -> None:

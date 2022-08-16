@@ -43,7 +43,7 @@ class AsnTag:
 
     @classmethod
     @lru_cache
-    def ty(cls) -> model.Type:
+    def ty(cls, skip_proof: bool = False) -> model.Type:
         """The ASN Tag message type in RecordFlux."""
         return simple_message(
             strid([PRELUDE_NAME, "Asn_Tag"]),
@@ -52,7 +52,7 @@ class AsnTag:
                 "Form": ASN_TAG_FORM_TY,
                 "Num": ASN_TAG_NUM_TY,
             },
-            skip_proof=False,
+            skip_proof=skip_proof,
         )
 
     @lru_cache
@@ -185,6 +185,7 @@ class BerType(Protocol):
         return SequenceBerType(
             path,
             "Explicit_" + self.ident,
+            # A `frozendict` is required here to comply with `lru_cache`.
             frozendict({"Inner": self}),
         ).implicitly_tagged(tag, path)
 

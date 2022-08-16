@@ -12,5 +12,5 @@ def strid(ident: Union[str, Sequence[str], ID]) -> str:
 
 
 def from_asn1_name(ident: str) -> str:
-    "Convert an ASN.1 identifier to an Ada one."
+    "Converts an ASN.1 identifier to an Ada one."
     return ident.replace("-", "_")
